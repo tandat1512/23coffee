@@ -11,8 +11,8 @@ echo Đang khởi động ứng dụng...
 echo Trình duyệt web sẽ tự động mở tại: http://localhost:5000
 echo.
 echo [TÀI KHOẢN ĐĂNG NHẬP]
-echo  - Tài khoản 1: tandat  / Mật khẩu: tandat@23coffee
-echo  - Tài khoản 2: partner / Mật khẩu: partner@23coffee
+echo  - Tài khoản: admin
+echo  - Mật khẩu : admin
 echo.
 echo [LƯU Ý] Hãy giữ cửa sổ này chạy trong suốt quá trình sử dụng.
 echo Khi muốn tắt ứng dụng, chỉ cần đóng cửa sổ này lại.

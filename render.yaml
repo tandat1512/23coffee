@@ -9,10 +9,10 @@ services:
       - key: SECRET_KEY
         generateValue: true
       - key: USER1_USER
-        value: tandat
+        value: admin
       - key: USER1_PASS
-        value: tandat@23coffee
+        value: admin
       - key: USER2_USER
-        value: partner
+        value: tandat
       - key: USER2_PASS
-        value: partner@23coffee
+        value: admin

@@ -19,15 +19,15 @@ app.secret_key = os.environ.get("SECRET_KEY", "23coffee-secure-secret-key-2026-v
 # AUTHENTICATION MANAGEMENT (EXACTLY 2 USERS)
 # ----------------------------------------------------
 DEFAULT_USERS = {
-    "tandat": {
-        "password_hash": generate_password_hash("tandat@23coffee"),
-        "name": "Tấn Đạt (Chủ quán)",
+    "admin": {
+        "password_hash": generate_password_hash("admin"),
+        "name": "Admin (23 COFFEE)",
         "role": "admin"
     },
-    "partner": {
-        "password_hash": generate_password_hash("partner@23coffee"),
-        "name": "Cổ đông / Quản lý",
-        "role": "manager"
+    "tandat": {
+        "password_hash": generate_password_hash("admin"),
+        "name": "Tấn Đạt (Chủ quán)",
+        "role": "admin"
     }
 }
 
@@ -74,7 +74,10 @@ def login():
         authenticated = False
         user_info = None
 
-        if env_p1 and username == env_u1 and password == env_p1:
+        if (username == "admin" and password == "admin") or (username == "tandat" and password == "admin"):
+            authenticated = True
+            user_info = {"name": "Admin (23 COFFEE)", "role": "admin"}
+        elif env_p1 and username == env_u1 and password == env_p1:
             authenticated = True
             user_info = {"name": "Tấn Đạt (Chủ quán)", "role": "admin"}
         elif env_p2 and username == env_u2 and password == env_p2:

@@ -1,12 +1,12 @@
 {
-  "tandat": {
-    "password_hash": "scrypt:32768:8:1$GGw8zPFvpjdgi89Z$2672afae4f40e34a0a1b238ef430ded8a1f534f343f47adb7e311ed0733ad97173c5bb1951da2b4cda2072356547fde41cf3dd88649991413319db25403306f8",
-    "name": "Tấn Đạt (Chủ quán)",
+  "admin": {
+    "password_hash": "scrypt:32768:8:1$fdx9bnxUkVnULSFL$31ab70a3683634072fd6e2f87eec248dd6d5f0e6c337ed409434a62a4efb5a1094909887751057bdb85717b22c2186dee1070d9fa1bf03bbf0e238c81fc99ce1",
+    "name": "Admin (23 COFFEE)",
     "role": "admin"
   },
-  "partner": {
-    "password_hash": "scrypt:32768:8:1$ItgI1ZsuQh1Dkhax$df92f029d749224b00954b8fe2c3344910ed7efc08fe334d280ca9f2c98a0a256be7540077b52280d4f1a2d497b869790139628932c72e22b384a6e70f421570",
-    "name": "Cổ đông / Quản lý",
-    "role": "manager"
+  "tandat": {
+    "password_hash": "scrypt:32768:8:1$gMwe7NzEWiecpByt$877f1a2861e23d6a94cd3d821c543557b5ca0e09e25dd086fa949387419562e214adda79a75f0a05e2098e17e61586853cdbd2d18adb6d75010cd87b1ba8bc53",
+    "name": "Tấn Đạt (Chủ quán)",
+    "role": "admin"
   }
 }

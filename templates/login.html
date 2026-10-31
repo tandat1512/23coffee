@@ -58,8 +58,8 @@
       <p class="text-xs text-slate-300 mt-0.5">Hệ Thống Quản Trị Cost & Menu Nội Bộ</p>
       
       <div class="mt-2.5 inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/20 text-amber-200 border border-amber-400/30 text-[11px] font-semibold">
-        <i class="fa-solid fa-lock text-[10px]"></i>
-        <span>Giới Hạn Chỉ 2 Người Truy Cập</span>
+        <i class="fa-solid fa-shield-halved text-[10px]"></i>
+        <span>Xác Thực Bảo Mật Nội Bộ</span>
       </div>
     </div>
 
@@ -75,10 +75,10 @@
 
       <form method="POST" action="/login" class="space-y-4">
         <div>
-          <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Tên Đăng Nhập</label>
+          <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Tài Khoản</label>
           <div class="relative">
             <i class="fa-solid fa-user absolute left-3.5 top-3.5 text-slate-400 text-sm"></i>
-            <input type="text" name="username" required autofocus placeholder="tandat hoặc partner" class="w-full pl-10 pr-3 py-2.5 sm:py-3 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-600 focus:border-transparent">
+            <input type="text" name="username" required autofocus placeholder="Nhập tài khoản" class="w-full pl-10 pr-3 py-2.5 sm:py-3 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-600 focus:border-transparent">
           </div>
         </div>
 
@@ -95,26 +95,6 @@
           <span>Đăng Nhập Vào Hệ Thống</span>
         </button>
       </form>
-
-      <!-- Account Info Help Box -->
-      <div class="bg-slate-50 p-3 sm:p-4 rounded-xl border border-slate-200 text-xs text-slate-600 space-y-2">
-        <div class="font-bold text-slate-800 flex items-center gap-1.5">
-          <i class="fa-solid fa-shield-halved text-amber-600"></i>
-          <span>2 Tài Khoản Được Cấp Quyền:</span>
-        </div>
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1 font-mono text-[11px]">
-          <div class="bg-white p-2.5 rounded-lg border border-slate-200 shadow-sm">
-            <div class="font-bold text-slate-800">👤 User 1 (Chủ quán)</div>
-            <div class="text-slate-500 mt-0.5">User: <b class="text-blue-600">tandat</b></div>
-            <div class="text-slate-500">Pass: <b class="text-slate-800">tandat@23coffee</b></div>
-          </div>
-          <div class="bg-white p-2.5 rounded-lg border border-slate-200 shadow-sm">
-            <div class="font-bold text-slate-800">👥 User 2 (Cổ đông)</div>
-            <div class="text-slate-500 mt-0.5">User: <b class="text-blue-600">partner</b></div>
-            <div class="text-slate-500">Pass: <b class="text-slate-800">partner@23coffee</b></div>
-          </div>
-        </div>
-      </div>
 
     </div>
 
