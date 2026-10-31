@@ -1,0 +1,12 @@
+{
+  "tandat": {
+    "password_hash": "scrypt:32768:8:1$GGw8zPFvpjdgi89Z$2672afae4f40e34a0a1b238ef430ded8a1f534f343f47adb7e311ed0733ad97173c5bb1951da2b4cda2072356547fde41cf3dd88649991413319db25403306f8",
+    "name": "Tấn Đạt (Chủ quán)",
+    "role": "admin"
+  },
+  "partner": {
+    "password_hash": "scrypt:32768:8:1$ItgI1ZsuQh1Dkhax$df92f029d749224b00954b8fe2c3344910ed7efc08fe334d280ca9f2c98a0a256be7540077b52280d4f1a2d497b869790139628932c72e22b384a6e70f421570",
+    "name": "Cổ đông / Quản lý",
+    "role": "manager"
+  }
+}

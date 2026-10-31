@@ -1,0 +1,982 @@
+{
+  "materials": [
+    {
+      "id": "NL01",
+      "name": "Cà phê",
+      "pack": "Gói 1kg",
+      "unit_buy": "kg",
+      "qty": 1000.0,
+      "price": 250000.0,
+      "unit_cost": 250.0,
+      "unit_base": "g",
+      "note": "Nguyên liệu cốt cho cà phê pha phin/pha máy"
+    },
+    {
+      "id": "NL02",
+      "name": "Sữa đặc",
+      "pack": "Hộp thiếc 1284g",
+      "unit_buy": "hộp",
+      "qty": 1284.0,
+      "price": 66000.0,
+      "unit_cost": 51.4,
+      "unit_base": "g",
+      "note": "Dùng cho cà phê sữa, bạc xỉu, matcha"
+    },
+    {
+      "id": "NL03",
+      "name": "Đường",
+      "pack": "Túi 600g",
+      "unit_buy": "g",
+      "qty": 600.0,
+      "price": 12500.0,
+      "unit_cost": 20.83,
+      "unit_base": "g",
+      "note": "Nước đường / đường pha trà trái cây"
+    },
+    {
+      "id": "NL04",
+      "name": "Bột cacao",
+      "pack": "Gói 500g",
+      "unit_buy": "g",
+      "qty": 500.0,
+      "price": 158000.0,
+      "unit_cost": 316.0,
+      "unit_base": "g",
+      "note": "Rắc decor cà phê muối"
+    },
+    {
+      "id": "NL05",
+      "name": "Sữa tươi",
+      "pack": "Hộp 1000ml",
+      "unit_buy": "ml",
+      "qty": 1000.0,
+      "price": 28000.0,
+      "unit_cost": 28.0,
+      "unit_base": "ml",
+      "note": "Dùng cho bạc xỉu, cà phê sữa tươi, matcha"
+    },
+    {
+      "id": "NL06",
+      "name": "Kem béo Rich",
+      "pack": "Hộp 454ml",
+      "unit_buy": "ml",
+      "qty": 454.0,
+      "price": 30000.0,
+      "unit_cost": 66.08,
+      "unit_base": "ml",
+      "note": "Tạo béo ngậy quầy pha chế"
+    },
+    {
+      "id": "NL07",
+      "name": "Bột ly/muỗng",
+      "pack": "Bộ mang đi",
+      "unit_buy": "bộ",
+      "qty": 1.0,
+      "price": 1100.0,
+      "unit_cost": 1100.0,
+      "unit_base": "cái",
+      "note": "Ly, nắp, muỗng, ống hút tiêu hao 1 ly"
+    },
+    {
+      "id": "NL08",
+      "name": "Whipping cream",
+      "pack": "Hộp 1000ml",
+      "unit_buy": "ml",
+      "qty": 1000.0,
+      "price": 155000.0,
+      "unit_cost": 155.0,
+      "unit_base": "ml",
+      "note": "Kem tươi đánh bông"
+    },
+    {
+      "id": "NL09",
+      "name": "Matcha",
+      "pack": "Gói 1000g",
+      "unit_buy": "g",
+      "qty": 1000.0,
+      "price": 350000.0,
+      "unit_cost": 350.0,
+      "unit_base": "g",
+      "note": "Bột matcha tiêu chuẩn"
+    },
+    {
+      "id": "NL10",
+      "name": "Trà",
+      "pack": "Gói 1000g",
+      "unit_buy": "g",
+      "qty": 1000.0,
+      "price": 150000.0,
+      "unit_cost": 150.0,
+      "unit_base": "g",
+      "note": "Cốt trà truyền thống"
+    },
+    {
+      "id": "NL11",
+      "name": "chuky đác me",
+      "pack": "Hũ 1000g",
+      "unit_buy": "g",
+      "qty": 1000.0,
+      "price": 158000.0,
+      "unit_cost": 158.0,
+      "unit_base": "g",
+      "note": "Mứt đác me chua ngọt"
+    },
+    {
+      "id": "NL12",
+      "name": "chunky thơm",
+      "pack": "Hũ 1000g",
+      "unit_buy": "g",
+      "qty": 1000.0,
+      "price": 175000.0,
+      "unit_cost": 175.0,
+      "unit_base": "g",
+      "note": "Mứt dứa/thơm miếng"
+    },
+    {
+      "id": "NL13",
+      "name": "chunky quýt",
+      "pack": "Hũ 1000g",
+      "unit_buy": "g",
+      "qty": 1000.0,
+      "price": 188000.0,
+      "unit_cost": 188.0,
+      "unit_base": "g",
+      "note": "Mứt thịt quýt pha trà"
+    },
+    {
+      "id": "NL14",
+      "name": "chunky chuỗi ngọc",
+      "pack": "Hũ 1000g",
+      "unit_buy": "g",
+      "qty": 1000.0,
+      "price": 192000.0,
+      "unit_cost": 192.0,
+      "unit_base": "g",
+      "note": "Topping chuỗi ngọc"
+    },
+    {
+      "id": "NL15",
+      "name": "Trà lài",
+      "pack": "Gói 800ml nước cốt",
+      "unit_buy": "ml",
+      "qty": 800.0,
+      "price": 3400.0,
+      "unit_cost": 4.25,
+      "unit_base": "ml",
+      "note": "Cốt trà lài ủ lạnh/nóng"
+    },
+    {
+      "id": "NL16",
+      "name": "Trà đen",
+      "pack": "Gói 800ml nước cốt",
+      "unit_buy": "ml",
+      "qty": 800.0,
+      "price": 2600.0,
+      "unit_cost": 3.25,
+      "unit_base": "ml",
+      "note": "Cốt trà đen ủ chuẩn vị"
+    },
+    {
+      "id": "NL17",
+      "name": "Trà olong",
+      "pack": "Gói 600ml nước cốt",
+      "unit_buy": "ml",
+      "qty": 600.0,
+      "price": 7200.0,
+      "unit_cost": 12.0,
+      "unit_base": "ml",
+      "note": "Cốt trà Ô long đậm vị"
+    },
+    {
+      "id": "NL18",
+      "name": "Syrup đào",
+      "pack": "Chai 1000g",
+      "unit_buy": "g",
+      "qty": 1000.0,
+      "price": 125000.0,
+      "unit_cost": 125.0,
+      "unit_base": "g",
+      "note": "Siro hương đào tự nhiên"
+    },
+    {
+      "id": "NL19",
+      "name": "Syrup vải",
+      "pack": "Chai 1000g",
+      "unit_buy": "g",
+      "qty": 1000.0,
+      "price": 125000.0,
+      "unit_cost": 125.0,
+      "unit_base": "g",
+      "note": "Siro hương vải ngọt thanh"
+    },
+    {
+      "id": "NL20",
+      "name": "Syrup quýt",
+      "pack": "Chai 1000g",
+      "unit_buy": "g",
+      "qty": 1000.0,
+      "price": 130000.0,
+      "unit_cost": 130.0,
+      "unit_base": "g",
+      "note": "Siro hương quýt"
+    },
+    {
+      "id": "NL21",
+      "name": "Bột phô mai",
+      "pack": "Gói 500g",
+      "unit_buy": "g",
+      "qty": 500.0,
+      "price": 128000.0,
+      "unit_cost": 256.0,
+      "unit_base": "g",
+      "note": "Bột phô mai mặn béo"
+    },
+    {
+      "id": "NL22",
+      "name": "Vụn oreo",
+      "pack": "Gói 1000g",
+      "unit_buy": "g",
+      "qty": 1000.0,
+      "price": 130000.0,
+      "unit_cost": 130.0,
+      "unit_base": "g",
+      "note": "Bánh oreo xay vụn topping"
+    },
+    {
+      "id": "NL23",
+      "name": "Sốt caramel",
+      "pack": "Chai 630g",
+      "unit_buy": "g",
+      "qty": 630.0,
+      "price": 62000.0,
+      "unit_cost": 98.41,
+      "unit_base": "g",
+      "note": "Sốt sốt caramel quầy pha chế"
+    },
+    {
+      "id": "NL24",
+      "name": "Sốt choco",
+      "pack": "Chai 630g",
+      "unit_buy": "g",
+      "qty": 630.0,
+      "price": 65000.0,
+      "unit_cost": 103.17,
+      "unit_base": "g",
+      "note": "Sốt socola đậm đà"
+    },
+    {
+      "id": "NL25",
+      "name": "Bột sữa",
+      "pack": "Túi 1000g",
+      "unit_buy": "g",
+      "qty": 1000.0,
+      "price": 72000.0,
+      "unit_cost": 72.0,
+      "unit_base": "g",
+      "note": "Bột béo pha trà sữa"
+    },
+    {
+      "id": "NL26",
+      "name": "Kem cheese",
+      "pack": "Hộp 150g",
+      "unit_buy": "g",
+      "qty": 150.0,
+      "price": 18000.0,
+      "unit_cost": 120.0,
+      "unit_base": "g",
+      "note": "Kem phô mai sánh mịn"
+    },
+    {
+      "id": "NL27",
+      "name": "Hạt đác",
+      "pack": "Túi 1000g",
+      "unit_buy": "g",
+      "qty": 1000.0,
+      "price": 80000.0,
+      "unit_cost": 80.0,
+      "unit_base": "g",
+      "note": "Hạt đác rim giòn ngọt"
+    },
+    {
+      "id": "NL28",
+      "name": "Vải lon",
+      "pack": "Hộp 14 trái",
+      "unit_buy": "trái",
+      "qty": 14.0,
+      "price": 38000.0,
+      "unit_cost": 2714.29,
+      "unit_base": "trái",
+      "note": "Trái vải ngâm đường (14 trái/hộp)"
+    },
+    {
+      "id": "NL29",
+      "name": "Sen lon",
+      "pack": "Hộp 250g",
+      "unit_buy": "g",
+      "qty": 250.0,
+      "price": 58000.0,
+      "unit_cost": 232.0,
+      "unit_base": "g",
+      "note": "Hạt sen ngâm bùi ngọt"
+    },
+    {
+      "id": "NL30",
+      "name": "Thạch",
+      "pack": "Hộp 600g",
+      "unit_buy": "g",
+      "qty": 600.0,
+      "price": 65000.0,
+      "unit_cost": 108.33,
+      "unit_base": "g",
+      "note": "Thạch topping trà trái cây"
+    },
+    {
+      "id": "NL31",
+      "name": "Đào",
+      "pack": "Hộp 70g đào lát",
+      "unit_buy": "miếng",
+      "qty": 70.0,
+      "price": 55000.0,
+      "unit_cost": 785.71,
+      "unit_base": "miếng",
+      "note": "Đào ngâm giòn miếng"
+    },
+    {
+      "id": "NL32",
+      "name": "một matcha",
+      "pack": "Túi 100g",
+      "unit_buy": "g",
+      "qty": 100.0,
+      "price": 135000.0,
+      "unit_cost": 1350.0,
+      "unit_base": "g",
+      "note": "Bột matcha nguyên chất cao cấp"
+    },
+    {
+      "id": "NL33",
+      "name": "quýt",
+      "pack": "Túi 14 trái",
+      "unit_buy": "trái",
+      "qty": 14.0,
+      "price": 11000.0,
+      "unit_cost": 785.71,
+      "unit_base": "trái",
+      "note": "Quýt tươi decor & vắt nước"
+    },
+    {
+      "id": "NL34",
+      "name": "nước dừa",
+      "pack": "Chai 1000g",
+      "unit_buy": "g",
+      "qty": 1000.0,
+      "price": 54000.0,
+      "unit_cost": 54.0,
+      "unit_base": "g",
+      "note": "Nước dừa tươi thanh mát"
+    }
+  ],
+  "packaging": [
+    {
+      "id": "BB01",
+      "name": "Gói Mang Đi Tiêu Chuẩn 23 Coffee",
+      "cup": 600.0,
+      "lid": 200.0,
+      "straw": 120.0,
+      "bag": 100.0,
+      "spoon": 80.0,
+      "total": 1100.0,
+      "note": "Đang áp dụng chuẩn 1.100đ/bộ theo dữ liệu quán"
+    },
+    {
+      "id": "BB02",
+      "name": "Mang đi - Size M (360ml) Đầy Đủ",
+      "cup": 750.0,
+      "lid": 250.0,
+      "straw": 150.0,
+      "bag": 150.0,
+      "spoon": 100.0,
+      "total": 1400.0,
+      "note": "Cà phê đen, sữa, bạc xỉu mang đi cao cấp"
+    },
+    {
+      "id": "BB03",
+      "name": "Mang đi - Size L (500ml) Đầy Đủ",
+      "cup": 900.0,
+      "lid": 300.0,
+      "straw": 180.0,
+      "bag": 180.0,
+      "spoon": 120.0,
+      "total": 1680.0,
+      "note": "Trà trái cây, trà sen, trà ô long Size L"
+    },
+    {
+      "id": "BB04",
+      "name": "Tại Quán (Dine-in) - Khấu Hao Thủy Tinh",
+      "cup": 250.0,
+      "lid": 0.0,
+      "straw": 150.0,
+      "bag": 0.0,
+      "spoon": 100.0,
+      "total": 500.0,
+      "note": "Khấu hao ly vỡ, nước rửa chén, khăn giấy"
+    }
+  ],
+  "drinks": [
+    {
+      "id": "D01",
+      "name": "Cà phê sữa",
+      "category": "Cà Phê Truyền Thống",
+      "pkg_id": "BB01",
+      "waste_pct": 0.05,
+      "selling_price": 27000.0,
+      "recipe": [
+        {
+          "name": "Cà phê",
+          "qty": 18.0,
+          "unit": "g"
+        },
+        {
+          "name": "Sữa đặc",
+          "qty": 30.0,
+          "unit": "g"
+        }
+      ]
+    },
+    {
+      "id": "D02",
+      "name": "Cà phê đen",
+      "category": "Cà Phê Truyền Thống",
+      "pkg_id": "BB01",
+      "waste_pct": 0.05,
+      "selling_price": 23000.0,
+      "recipe": [
+        {
+          "name": "Cà phê",
+          "qty": 18.0,
+          "unit": "g"
+        },
+        {
+          "name": "Đường",
+          "qty": 10.0,
+          "unit": "g"
+        }
+      ]
+    },
+    {
+      "id": "D03",
+      "name": "Olong chuỗi ngọc",
+      "category": "Trà Trái Cây Cao Cấp",
+      "pkg_id": "BB01",
+      "waste_pct": 0.05,
+      "selling_price": 40000.0,
+      "recipe": [
+        {
+          "name": "Trà olong",
+          "qty": 100.0,
+          "unit": "ml"
+        },
+        {
+          "name": "Đường",
+          "qty": 10.0,
+          "unit": "g"
+        },
+        {
+          "name": "chunky chuỗi ngọc",
+          "qty": 30.0,
+          "unit": "g"
+        },
+        {
+          "name": "Thạch",
+          "qty": 30.0,
+          "unit": "g"
+        }
+      ]
+    },
+    {
+      "id": "D04",
+      "name": "Trà đào",
+      "category": "Trà Trái Cây",
+      "pkg_id": "BB01",
+      "waste_pct": 0.05,
+      "selling_price": 30000.0,
+      "recipe": [
+        {
+          "name": "Trà đen",
+          "qty": 100.0,
+          "unit": "ml"
+        },
+        {
+          "name": "Đường",
+          "qty": 20.0,
+          "unit": "g"
+        },
+        {
+          "name": "Syrup đào",
+          "qty": 20.0,
+          "unit": "g"
+        },
+        {
+          "name": "Đào",
+          "qty": 4.0,
+          "unit": "miếng"
+        }
+      ]
+    },
+    {
+      "id": "D05",
+      "name": "Trà vải",
+      "category": "Trà Trái Cây",
+      "pkg_id": "BB01",
+      "waste_pct": 0.05,
+      "selling_price": 30000.0,
+      "recipe": [
+        {
+          "name": "Trà lài",
+          "qty": 100.0,
+          "unit": "ml"
+        },
+        {
+          "name": "Syrup vải",
+          "qty": 20.0,
+          "unit": "g"
+        },
+        {
+          "name": "Đường",
+          "qty": 20.0,
+          "unit": "g"
+        },
+        {
+          "name": "Vải lon",
+          "qty": 2.0,
+          "unit": "trái"
+        }
+      ]
+    },
+    {
+      "id": "D06",
+      "name": "Trà me",
+      "category": "Trà Trái Cây",
+      "pkg_id": "BB01",
+      "waste_pct": 0.05,
+      "selling_price": 35000.0,
+      "recipe": [
+        {
+          "name": "Trà đen",
+          "qty": 100.0,
+          "unit": "ml"
+        },
+        {
+          "name": "Đường",
+          "qty": 10.0,
+          "unit": "g"
+        },
+        {
+          "name": "chuky đác me",
+          "qty": 30.0,
+          "unit": "g"
+        },
+        {
+          "name": "Hạt đác",
+          "qty": 30.0,
+          "unit": "g"
+        }
+      ]
+    },
+    {
+      "id": "D07",
+      "name": "Lài đác thơm",
+      "category": "Trà Trái Cây",
+      "pkg_id": "BB01",
+      "waste_pct": 0.05,
+      "selling_price": 35000.0,
+      "recipe": [
+        {
+          "name": "Trà lài",
+          "qty": 100.0,
+          "unit": "ml"
+        },
+        {
+          "name": "Đường",
+          "qty": 10.0,
+          "unit": "g"
+        },
+        {
+          "name": "chunky thơm",
+          "qty": 30.0,
+          "unit": "g"
+        },
+        {
+          "name": "Hạt đác",
+          "qty": 30.0,
+          "unit": "g"
+        }
+      ]
+    },
+    {
+      "id": "D08",
+      "name": "Trà sen",
+      "category": "Trà Trái Cây",
+      "pkg_id": "BB01",
+      "waste_pct": 0.05,
+      "selling_price": 40000.0,
+      "recipe": [
+        {
+          "name": "Trà olong",
+          "qty": 80.0,
+          "unit": "ml"
+        },
+        {
+          "name": "Đường",
+          "qty": 20.0,
+          "unit": "g"
+        },
+        {
+          "name": "Sen lon",
+          "qty": 20.0,
+          "unit": "g"
+        },
+        {
+          "name": "Kem cheese",
+          "qty": 20.0,
+          "unit": "g"
+        }
+      ]
+    },
+    {
+      "id": "D09",
+      "name": "Hồng trà kem cheese",
+      "category": "Trà Kem Cheese",
+      "pkg_id": "BB01",
+      "waste_pct": 0.05,
+      "selling_price": 30000.0,
+      "recipe": [
+        {
+          "name": "Trà đen",
+          "qty": 100.0,
+          "unit": "ml"
+        },
+        {
+          "name": "Đường",
+          "qty": 30.0,
+          "unit": "g"
+        },
+        {
+          "name": "Kem cheese",
+          "qty": 30.0,
+          "unit": "g"
+        }
+      ]
+    },
+    {
+      "id": "D10",
+      "name": "Bạc xỉu",
+      "category": "Cà Phê Truyền Thống",
+      "pkg_id": "BB01",
+      "waste_pct": 0.05,
+      "selling_price": 27000.0,
+      "recipe": [
+        {
+          "name": "Cà phê",
+          "qty": 14.0,
+          "unit": "g"
+        },
+        {
+          "name": "Sữa đặc",
+          "qty": 20.0,
+          "unit": "g"
+        },
+        {
+          "name": "Sữa tươi",
+          "qty": 70.0,
+          "unit": "ml"
+        }
+      ]
+    },
+    {
+      "id": "D11",
+      "name": "Cà phê caramel",
+      "category": "Cà Phê Sáng Tạo",
+      "pkg_id": "BB01",
+      "waste_pct": 0.05,
+      "selling_price": 30000.0,
+      "recipe": [
+        {
+          "name": "Cà phê",
+          "qty": 18.0,
+          "unit": "g"
+        },
+        {
+          "name": "Sữa đặc",
+          "qty": 10.0,
+          "unit": "g"
+        },
+        {
+          "name": "Sốt caramel",
+          "qty": 20.0,
+          "unit": "g"
+        },
+        {
+          "name": "Sữa tươi",
+          "qty": 50.0,
+          "unit": "ml"
+        }
+      ]
+    },
+    {
+      "id": "D12",
+      "name": "Cà phê muối",
+      "category": "Cà Phê Sáng Tạo",
+      "pkg_id": "BB01",
+      "waste_pct": 0.05,
+      "selling_price": 30000.0,
+      "recipe": [
+        {
+          "name": "Cà phê",
+          "qty": 18.0,
+          "unit": "g"
+        },
+        {
+          "name": "Sữa đặc",
+          "qty": 30.0,
+          "unit": "g"
+        },
+        {
+          "name": "Kem cheese",
+          "qty": 20.0,
+          "unit": "g"
+        },
+        {
+          "name": "Bột cacao",
+          "qty": 0.1,
+          "unit": "g"
+        }
+      ]
+    },
+    {
+      "id": "D13",
+      "name": "matcha",
+      "category": "Matcha Series",
+      "pkg_id": "BB01",
+      "waste_pct": 0.05,
+      "selling_price": 35000.0,
+      "recipe": [
+        {
+          "name": "một matcha",
+          "qty": 4.0,
+          "unit": "g"
+        },
+        {
+          "name": "Sữa đặc",
+          "qty": 30.0,
+          "unit": "g"
+        },
+        {
+          "name": "Sữa tươi",
+          "qty": 70.0,
+          "unit": "ml"
+        }
+      ]
+    },
+    {
+      "id": "D14",
+      "name": "Matcha oreo",
+      "category": "Matcha Series",
+      "pkg_id": "BB01",
+      "waste_pct": 0.05,
+      "selling_price": 45000.0,
+      "recipe": [
+        {
+          "name": "một matcha",
+          "qty": 3.0,
+          "unit": "g"
+        },
+        {
+          "name": "Sữa đặc",
+          "qty": 30.0,
+          "unit": "g"
+        },
+        {
+          "name": "Sữa tươi",
+          "qty": 70.0,
+          "unit": "ml"
+        },
+        {
+          "name": "Kem cheese",
+          "qty": 20.0,
+          "unit": "g"
+        },
+        {
+          "name": "Vụn oreo",
+          "qty": 20.0,
+          "unit": "g"
+        }
+      ]
+    },
+    {
+      "id": "D15",
+      "name": "matcha clod whisk",
+      "category": "Matcha Series",
+      "pkg_id": "BB01",
+      "waste_pct": 0.05,
+      "selling_price": 35000.0,
+      "recipe": [
+        {
+          "name": "Matcha",
+          "qty": 3.0,
+          "unit": "g"
+        },
+        {
+          "name": "Sữa đặc",
+          "qty": 30.0,
+          "unit": "g"
+        },
+        {
+          "name": "Sữa tươi",
+          "qty": 70.0,
+          "unit": "ml"
+        }
+      ]
+    },
+    {
+      "id": "D16",
+      "name": "trà quýt hoa nhài",
+      "category": "Trà Trái Cây",
+      "pkg_id": "BB01",
+      "waste_pct": 0.05,
+      "selling_price": 30000.0,
+      "recipe": [
+        {
+          "name": "Trà lài",
+          "qty": 100.0,
+          "unit": "ml"
+        },
+        {
+          "name": "chunky quýt",
+          "qty": 20.0,
+          "unit": "g"
+        },
+        {
+          "name": "Syrup quýt",
+          "qty": 10.0,
+          "unit": "g"
+        },
+        {
+          "name": "Đường",
+          "qty": 10.0,
+          "unit": "g"
+        },
+        {
+          "name": "quýt",
+          "qty": 1.0,
+          "unit": "trái"
+        }
+      ]
+    },
+    {
+      "id": "D17",
+      "name": "matcha cramel",
+      "category": "Matcha Series",
+      "pkg_id": "BB01",
+      "waste_pct": 0.05,
+      "selling_price": 35000.0,
+      "recipe": [
+        {
+          "name": "Matcha",
+          "qty": 3.0,
+          "unit": "g"
+        },
+        {
+          "name": "Sốt caramel",
+          "qty": 20.0,
+          "unit": "g"
+        },
+        {
+          "name": "Sữa tươi",
+          "qty": 80.0,
+          "unit": "ml"
+        },
+        {
+          "name": "Kem cheese",
+          "qty": 20.0,
+          "unit": "g"
+        }
+      ]
+    },
+    {
+      "id": "D18",
+      "name": "coconut matcha",
+      "category": "Matcha Series",
+      "pkg_id": "BB01",
+      "waste_pct": 0.05,
+      "selling_price": 35000.0,
+      "recipe": [
+        {
+          "name": "Matcha",
+          "qty": 3.0,
+          "unit": "g"
+        },
+        {
+          "name": "Kem cheese",
+          "qty": 30.0,
+          "unit": "g"
+        },
+        {
+          "name": "nước dừa",
+          "qty": 100.0,
+          "unit": "g"
+        }
+      ]
+    }
+  ],
+  "fixed_costs": [
+    {
+      "cost": 15400000,
+      "id": 1,
+      "name": "Tiền thuê mặt bằng kinh doanh",
+      "note": "Mức thuê quán ki-ốt / take-away"
+    },
+    {
+      "cost": 11600000,
+      "id": 2,
+      "name": "Lương nhân viên pha chế & phục vụ (Part-time)",
+      "note": "2 ca x 4-5 tiếng/ngày x 22.000đ/giờ"
+    },
+    {
+      "cost": 3500000,
+      "id": 3,
+      "name": "Tiền điện (Máy pha, tủ mát, máy xay, máy lạnh)",
+      "note": "Biến phí điện năng thiết bị quầy bar"
+    },
+    {
+      "cost": 500000,
+      "id": 4,
+      "name": "Tiền nước máy sinh hoạt & lọc",
+      "note": "Rửa dụng cụ, vệ sinh"
+    },
+    {
+      "cost": 7500000,
+      "id": 5,
+      "name": "Internet Wifi & Phần mềm bán hàng POS",
+      "note": "KiotViet/iPOS + Cáp quang tốc độ cao"
+    },
+    {
+      "cost": 5500000,
+      "id": 6,
+      "name": "Khấu hao máy móc thiết bị & CCDC (24 tháng)",
+      "note": "Máy pha, máy xay, tủ lạnh, bàn ghế quầy bar"
+    },
+    {
+      "cost": 5800000,
+      "id": 7,
+      "name": "Ngân sách Marketing & Khuyến mãi",
+      "note": "Chạy bài địa phương, tờ rơi, biển hiệu"
+    },
+    {
+      "cost": 2400000,
+      "id": 8,
+      "name": "Chi phí rủi ro & Vật tư vệ sinh linh tinh",
+      "note": "Nước rửa chén, túi rác, bóng đèn hỏng"
+    }
+  ],
+  "target_profit": 50000000.0
+}

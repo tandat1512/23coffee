@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Đăng Nhập — 23 COFFEE F&B Cost Engine</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- Google Font -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: { sans: ['"Plus Jakarta Sans"', 'sans-serif'] },
+          colors: {
+            brand: {
+              600: '#1B365D',
+              700: '#142846',
+              800: '#0E1C31',
+              accent: '#C59B27'
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body { font-family: 'Plus Jakarta Sans', sans-serif; }
+    .bg-gradient-coffee {
+      background: radial-gradient(circle at top right, #243B55 0%, #141E30 100%);
+    }
+  </style>
+</head>
+<body class="bg-gradient-coffee min-h-screen flex items-center justify-center p-4">
+
+  <div class="max-w-md w-full bg-white/95 backdrop-blur-md rounded-2xl shadow-2xl overflow-hidden border border-white/20 animate-in fade-in zoom-in-95 duration-200">
+    
+    <!-- Header Banner -->
+    <div class="bg-brand-600 text-white p-6 text-center relative">
+      <div class="w-16 h-16 rounded-2xl bg-amber-500/20 border border-amber-400/40 flex items-center justify-center text-amber-300 text-3xl font-black mx-auto mb-3 shadow-inner">
+        <i class="fa-solid fa-mug-hot"></i>
+      </div>
+      <h1 class="text-xl font-extrabold tracking-tight">23 COFFEE</h1>
+      <p class="text-xs text-slate-300 mt-1">Hệ Thống Quản Trị Cost & Menu Nội Bộ</p>
+      
+      <div class="mt-3 inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/20 text-amber-200 border border-amber-400/30 text-[11px] font-semibold">
+        <i class="fa-solid fa-lock text-[10px]"></i>
+        <span>Giới Hạn Chỉ 2 Người Truy Cập</span>
+      </div>
+    </div>
+
+    <!-- Login Form -->
+    <div class="p-6 sm:p-8 space-y-5">
+
+      {% if error %}
+      <div class="p-3 bg-red-50 border border-red-200 text-red-700 text-xs rounded-xl flex items-center gap-2">
+        <i class="fa-solid fa-circle-exclamation text-base"></i>
+        <span>{{ error }}</span>
+      </div>
+      {% endif %}
+
+      <form method="POST" action="/login" class="space-y-4">
+        <div>
+          <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Tên Đăng Nhập</label>
+          <div class="relative">
+            <i class="fa-solid fa-user absolute left-3.5 top-3 text-slate-400 text-sm"></i>
+            <input type="text" name="username" required autofocus placeholder="tandat hoặc partner" class="w-full pl-9 pr-3 py-2.5 text-sm border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-600 focus:border-transparent">
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Mật Khẩu</label>
+          <div class="relative">
+            <i class="fa-solid fa-key absolute left-3.5 top-3 text-slate-400 text-sm"></i>
+            <input type="password" name="password" required placeholder="Nhập mật khẩu được cấp" class="w-full pl-9 pr-3 py-2.5 text-sm border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-600 focus:border-transparent">
+          </div>
+        </div>
+
+        <button type="submit" class="w-full py-3 bg-brand-600 hover:bg-brand-700 text-white font-bold rounded-xl text-sm shadow-lg shadow-brand-600/30 transition transform active:scale-95 flex items-center justify-center gap-2">
+          <i class="fa-solid fa-arrow-right-to-bracket"></i>
+          <span>Đăng Nhập Vào Hệ Thống</span>
+        </button>
+      </form>
+
+      <!-- Account Info Help Box -->
+      <div class="bg-slate-50 p-3.5 rounded-xl border border-slate-200 text-xs text-slate-600 space-y-1.5">
+        <div class="font-bold text-slate-800 flex items-center gap-1.5">
+          <i class="fa-solid fa-shield-halved text-amber-600"></i>
+          <span>Thông Tin 2 Tài Khoản Mặc Định:</span>
+        </div>
+        <div class="grid grid-cols-2 gap-2 pt-1 font-mono text-[11px]">
+          <div class="bg-white p-2 rounded border border-slate-200">
+            <div class="font-bold text-slate-800">👤 User 1 (Chủ quán)</div>
+            <div class="text-slate-500">User: <b class="text-blue-600">tandat</b></div>
+            <div class="text-slate-500">Pass: <b class="text-slate-800">tandat@23coffee</b></div>
+          </div>
+          <div class="bg-white p-2 rounded border border-slate-200">
+            <div class="font-bold text-slate-800">👥 User 2 (Cổ đông)</div>
+            <div class="text-slate-500">User: <b class="text-blue-600">partner</b></div>
+            <div class="text-slate-500">Pass: <b class="text-slate-800">partner@23coffee</b></div>
+          </div>
+        </div>
+        <div class="text-[11px] text-slate-400 italic pt-1">
+          * Bạn có thể đổi mật khẩu bất kỳ lúc nào sau khi đăng nhập.
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Footer -->
+    <div class="bg-slate-100 p-3 text-center text-[11px] text-slate-500 border-t border-slate-200">
+      23 COFFEE © 2026 — Bảo mật nội bộ
+    </div>
+
+  </div>
+
+</body>
+</html>

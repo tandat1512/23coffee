@@ -1,0 +1,18 @@
+services:
+  - type: web
+    name: 23coffee-cost-engine
+    env: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn app:app
+    envVars:
+      - key: SECRET_KEY
+        generateValue: true
+      - key: USER1_USER
+        value: tandat
+      - key: USER1_PASS
+        value: tandat@23coffee
+      - key: USER2_USER
+        value: partner
+      - key: USER2_PASS
+        value: partner@23coffee

@@ -1,0 +1,1271 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>23 COFFEE — Hệ Thống Quản Trị Cost & Menu Tự Động</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- Google Font -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+          },
+          colors: {
+            brand: {
+              50: '#F5F7FA',
+              100: '#E4E8EE',
+              500: '#3A506B',
+              600: '#1B365D',
+              700: '#142846',
+              800: '#0E1C31',
+              accent: '#C59B27',
+              accentHover: '#B0881F'
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body { font-family: 'Plus Jakarta Sans', sans-serif; }
+    .badge-success { background-color: #DEF7EC; color: #03543F; border: 1px solid #BCF0DA; }
+    .badge-danger { background-color: #FDE8E8; color: #9B1C1C; border: 1px solid #FBD5D5; }
+    .badge-purple { background-color: #EDEBFE; color: #5521B5; border: 1px solid #DCD7FE; }
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #f1f1f1; }
+    ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+  </style>
+</head>
+<body class="bg-slate-100 text-slate-800 antialiased min-h-screen flex flex-col">
+
+  <!-- TOP NAVIGATION HEADER -->
+  <header class="bg-brand-600 text-white shadow-lg sticky top-0 z-40 border-b border-brand-700">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5 flex flex-col md:flex-row items-center justify-between gap-4">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-amber-500/20 border border-amber-400/40 flex items-center justify-center text-amber-300 text-xl font-black shadow-inner">
+          <i class="fa-solid fa-mug-hot"></i>
+        </div>
+        <div>
+          <h1 class="text-xl font-bold tracking-tight text-white flex items-center gap-2">
+            23 COFFEE <span class="text-xs font-normal px-2 py-0.5 rounded-full bg-amber-500/30 text-amber-200 border border-amber-400/30 uppercase tracking-wider">Internal Engine</span>
+          </h1>
+          <p class="text-xs text-slate-300">Nhập Liệu Đơn Giản — Tự Động Định Giá — Đồng Bộ Excel Chuyên Nghiệp</p>
+        </div>
+      </div>
+
+      <!-- Quick Action Buttons & User Menu -->
+      <div class="flex items-center gap-2.5 flex-wrap">
+        <button onclick="openNewDrinkModal()" class="px-3.5 py-2 bg-amber-500 hover:bg-amber-600 text-slate-900 font-bold rounded-lg text-sm shadow flex items-center gap-2 transition transform active:scale-95">
+          <i class="fa-solid fa-plus-circle"></i>
+          <span>Thêm Món Mới</span>
+        </button>
+        <button onclick="openNewMaterialModal()" class="px-3.5 py-2 bg-slate-700/80 hover:bg-slate-700 text-white font-medium rounded-lg text-sm border border-slate-600 flex items-center gap-2 transition">
+          <i class="fa-solid fa-boxes-stacked text-amber-400"></i>
+          <span>Thêm Nguyên Liệu</span>
+        </button>
+        <button onclick="syncExcel(true)" class="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg text-sm shadow flex items-center gap-2 transition">
+          <i class="fa-solid fa-file-excel"></i>
+          <span>Đồng Bộ Excel</span>
+        </button>
+        <a href="/api/download_excel" class="px-3 py-2 bg-blue-600/80 hover:bg-blue-600 text-white rounded-lg text-sm transition" title="Tải file Excel về máy">
+          <i class="fa-solid fa-download"></i>
+        </a>
+
+        <!-- User Profile Dropdown -->
+        <div class="relative ml-2 pl-2 border-l border-white/20">
+          <div class="flex items-center gap-2">
+            <span class="text-xs font-semibold bg-white/10 px-2.5 py-1.5 rounded-lg border border-white/15 flex items-center gap-1.5">
+              <i class="fa-solid fa-circle-user text-amber-300"></i>
+              <span>{{ session.get('user', 'User') }}</span>
+            </span>
+            <button onclick="openChangePasswordModal()" class="text-xs text-slate-300 hover:text-white underline" title="Đổi mật khẩu">
+              <i class="fa-solid fa-key"></i>
+            </button>
+            <a href="/logout" class="px-2.5 py-1.5 bg-red-500/80 hover:bg-red-600 text-white rounded-lg text-xs font-semibold transition" title="Đăng xuất">
+              <i class="fa-solid fa-arrow-right-from-bracket"></i>
+            </a>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </header>
+
+  <!-- KPI SUMMARY STRIP -->
+  <section class="bg-white border-b border-slate-200 py-3 shadow-sm">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
+        <div class="bg-slate-50 p-2.5 rounded-lg border border-slate-200/80">
+          <div class="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Tổng Số Món</div>
+          <div id="stat-drinks" class="text-lg font-bold text-slate-800 mt-0.5">--</div>
+        </div>
+        <div class="bg-slate-50 p-2.5 rounded-lg border border-slate-200/80">
+          <div class="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Nguyên Liệu Trong Kho</div>
+          <div id="stat-materials" class="text-lg font-bold text-slate-800 mt-0.5">--</div>
+        </div>
+        <div class="bg-slate-50 p-2.5 rounded-lg border border-slate-200/80">
+          <div class="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Giá Bán TB (AOV)</div>
+          <div id="stat-price" class="text-lg font-bold text-blue-600 mt-0.5">-- đ</div>
+        </div>
+        <div class="bg-slate-50 p-2.5 rounded-lg border border-slate-200/80">
+          <div class="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">% Food Cost TB</div>
+          <div id="stat-fc" class="text-lg font-bold text-emerald-600 mt-0.5">--%</div>
+        </div>
+        <div class="bg-slate-50 p-2.5 rounded-lg border border-slate-200/80">
+          <div class="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Lãi Gộp TB / Ly</div>
+          <div id="stat-profit" class="text-lg font-bold text-amber-600 mt-0.5">-- đ</div>
+        </div>
+        <div class="bg-amber-50 p-2.5 rounded-lg border border-amber-200">
+          <div class="text-[11px] font-bold text-amber-800 uppercase tracking-wider">Hòa Vốn / Ngày</div>
+          <div id="stat-beday" class="text-lg font-extrabold text-amber-700 mt-0.5">-- ly</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- MAIN NAVIGATION TABS -->
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-5 w-full">
+    <div class="flex items-center gap-2 border-b border-slate-300 pb-1 overflow-x-auto text-sm font-semibold">
+      <button onclick="switchTab('drinks')" id="tab-btn-drinks" class="px-4 py-2.5 text-brand-600 border-b-2 border-brand-600 flex items-center gap-2 whitespace-nowrap transition">
+        <i class="fa-solid fa-wine-glass"></i>
+        <span>Menu & Công Thức (<span id="tab-cnt-drinks">0</span>)</span>
+      </button>
+      <button onclick="switchTab('materials')" id="tab-btn-materials" class="px-4 py-2.5 text-slate-500 hover:text-slate-800 border-b-2 border-transparent flex items-center gap-2 whitespace-nowrap transition">
+        <i class="fa-solid fa-boxes-stacked"></i>
+        <span>Kho Nguyên Liệu (<span id="tab-cnt-materials">0</span>)</span>
+      </button>
+      <button onclick="switchTab('fixed-costs')" id="tab-btn-fixed-costs" class="px-4 py-2.5 text-slate-500 hover:text-slate-800 border-b-2 border-transparent flex items-center gap-2 whitespace-nowrap transition">
+        <i class="fa-solid fa-chart-line"></i>
+        <span>Chi Phí Cố Định & Hòa Vốn</span>
+      </button>
+      <button onclick="switchTab('guide')" id="tab-btn-guide" class="px-4 py-2.5 text-slate-500 hover:text-slate-800 border-b-2 border-transparent flex items-center gap-2 whitespace-nowrap transition">
+        <i class="fa-regular fa-circle-question"></i>
+        <span>Bảo Mật & Kết Nối Excel</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- MAIN CONTENT CONTAINER -->
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5 flex-1 w-full">
+
+    <!-- TAB 1: MENU & CÔNG THỨC (DRINKS) -->
+    <div id="tab-drinks" class="space-y-4">
+      <div class="bg-white p-4 rounded-xl border border-slate-200/90 shadow-sm flex flex-col md:flex-row items-center justify-between gap-3">
+        <div class="relative w-full md:w-80">
+          <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-3 text-slate-400 text-sm"></i>
+          <input type="text" id="search-drink" oninput="renderDrinks()" placeholder="Tìm kiếm món (vd: matcha, sữa...)" class="w-full pl-9 pr-3 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500">
+        </div>
+        <div id="category-filters" class="flex items-center gap-1.5 flex-wrap w-full md:w-auto"></div>
+      </div>
+
+      <div class="bg-white rounded-xl border border-slate-200/90 shadow-sm overflow-hidden">
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-sm">
+            <thead class="bg-slate-50 border-b border-slate-200 text-xs uppercase font-bold text-slate-500">
+              <tr>
+                <th class="py-3 px-4 w-12 text-center">STT</th>
+                <th class="py-3 px-4">Tên Thức Uống</th>
+                <th class="py-3 px-4">Nhóm Món</th>
+                <th class="py-3 px-4 text-right">Cost NL</th>
+                <th class="py-3 px-4 text-right">Bao Bì</th>
+                <th class="py-3 px-4 text-right font-bold text-slate-700">Tổng Cost</th>
+                <th class="py-3 px-4 text-right">Giá Gợi Ý</th>
+                <th class="py-3 px-4 text-right font-bold text-brand-600">Giá Bán</th>
+                <th class="py-3 px-4 text-center">% Food Cost</th>
+                <th class="py-3 px-4 text-right text-emerald-700 font-bold">Lãi Gộp</th>
+                <th class="py-3 px-4 text-center">Đánh Giá</th>
+                <th class="py-3 px-4 text-center w-28">Thao Tác</th>
+              </tr>
+            </thead>
+            <tbody id="drinks-table-body" class="divide-y divide-slate-100 text-slate-700 font-medium"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 2: KHO NGUYÊN LIỆU (MATERIALS) -->
+    <div id="tab-materials" class="space-y-4 hidden">
+      <div class="bg-white p-4 rounded-xl border border-slate-200/90 shadow-sm flex flex-col md:flex-row items-center justify-between gap-3">
+        <div class="relative w-full md:w-96">
+          <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-3 text-slate-400 text-sm"></i>
+          <input type="text" id="search-material" oninput="renderMaterials()" placeholder="Tìm nguyên liệu (cà phê, trà, đường, mứt...)" class="w-full pl-9 pr-3 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500">
+        </div>
+        <div class="flex items-center gap-2">
+          <span class="text-xs text-slate-500 italic">Mẹo: Khi nhà cung cấp tăng/giảm giá, hãy sửa giá ở đây, toàn bộ menu sẽ tự cập nhật!</span>
+          <button onclick="openNewMaterialModal()" class="px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white font-semibold rounded-lg text-sm flex items-center gap-2 shadow">
+            <i class="fa-solid fa-plus"></i>
+            <span>Thêm Nguyên Liệu Mới</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="bg-white rounded-xl border border-slate-200/90 shadow-sm overflow-hidden">
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-sm">
+            <thead class="bg-slate-50 border-b border-slate-200 text-xs uppercase font-bold text-slate-500">
+              <tr>
+                <th class="py-3 px-4 w-16 text-center">Mã</th>
+                <th class="py-3 px-4">Tên Nguyên Liệu</th>
+                <th class="py-3 px-4">Quy Cách Mua</th>
+                <th class="py-3 px-4 text-right">Khối Lượng / Thể Tích</th>
+                <th class="py-3 px-4 text-right">Giá Mua Sỉ</th>
+                <th class="py-3 px-4 text-right font-bold text-brand-600">Đơn Giá Cơ Sở</th>
+                <th class="py-3 px-4 text-center">Đơn Vị</th>
+                <th class="py-3 px-4">Ghi Chú</th>
+                <th class="py-3 px-4 text-center w-24">Thao Tác</th>
+              </tr>
+            </thead>
+            <tbody id="materials-table-body" class="divide-y divide-slate-100 text-slate-700"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 3: CHI PHÍ CỐ ĐỊNH & HÒA VỐN -->
+    <div id="tab-fixed-costs" class="space-y-5 hidden">
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
+        <div class="lg:col-span-2 bg-white rounded-xl border border-slate-200/90 shadow-sm p-5 space-y-4">
+          <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+            <div>
+              <h2 class="text-base font-bold text-slate-800">1. Chi Phí Cố Định Hàng Tháng (Fixed Operating Costs)</h2>
+              <p class="text-xs text-slate-500">Mức chi phí tối thiểu bắt buộc phải trả mỗi tháng dù quán có khách hay không.</p>
+            </div>
+            <button onclick="saveFixedCosts()" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold shadow flex items-center gap-1.5">
+              <i class="fa-solid fa-floppy-disk"></i>
+              <span>Lưu Chi Phí</span>
+            </button>
+          </div>
+
+          <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+              <thead class="bg-slate-50 text-xs uppercase font-bold text-slate-500 border-b border-slate-200">
+                <tr>
+                  <th class="py-2.5 px-3 text-center w-12">STT</th>
+                  <th class="py-2.5 px-3 text-left">Hạng Mục Chi Phí</th>
+                  <th class="py-2.5 px-3 text-right w-44">Số Tiền (VNĐ/tháng)</th>
+                  <th class="py-2.5 px-3 text-left">Ghi Chú</th>
+                </tr>
+              </thead>
+              <tbody id="fixed-costs-table-body" class="divide-y divide-slate-100"></tbody>
+              <tfoot>
+                <tr class="bg-amber-50/60 font-bold border-t-2 border-slate-300 text-slate-800">
+                  <td colspan="2" class="py-3 px-3">TỔNG CHI PHÍ CỐ ĐỊNH / THÁNG</td>
+                  <td id="total-fixed-cost-display" class="py-3 px-3 text-right text-brand-600 font-extrabold text-base">0 đ</td>
+                  <td></td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+        </div>
+
+        <div class="bg-gradient-to-br from-brand-600 to-brand-700 text-white rounded-xl p-5 shadow-md space-y-4">
+          <div class="border-b border-white/20 pb-3">
+            <h2 class="text-base font-bold flex items-center gap-2">
+              <i class="fa-solid fa-bullseye text-amber-300"></i>
+              <span>2. Điểm Hòa Vốn Thực Chiến</span>
+            </h2>
+            <p class="text-xs text-slate-200 mt-0.5">Dựa trên Menu thực tế của quán</p>
+          </div>
+
+          <div class="space-y-3">
+            <div class="bg-white/10 rounded-lg p-3 border border-white/10">
+              <div class="text-xs text-slate-200">Mục Tiêu Lợi Nhuận Kỳ Vọng (Chủ Quán)</div>
+              <div class="flex items-center gap-2 mt-1">
+                <input type="number" id="target-profit-input" class="w-full text-slate-900 font-bold px-2.5 py-1.5 rounded text-sm bg-white focus:outline-none" value="15000000" step="1000000" onchange="saveFixedCosts()">
+                <span class="text-xs font-semibold whitespace-nowrap">đ/tháng</span>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-2">
+              <div class="bg-white/10 rounded-lg p-2.5 border border-white/10">
+                <div class="text-[11px] text-slate-300">Giá bán TB (AOV)</div>
+                <div id="be-aov" class="text-base font-bold text-amber-300 mt-0.5">-- đ</div>
+              </div>
+              <div class="bg-white/10 rounded-lg p-2.5 border border-white/10">
+                <div class="text-[11px] text-slate-300">Lãi gộp TB (CM)</div>
+                <div id="be-cm" class="text-base font-bold text-emerald-300 mt-0.5">-- đ</div>
+              </div>
+            </div>
+
+            <div class="bg-amber-400 text-slate-900 rounded-xl p-3.5 shadow-lg border border-amber-300 text-center">
+              <div class="text-xs font-bold uppercase tracking-wider text-slate-800">Mục Tiêu Hòa Vốn Bắt Buộc</div>
+              <div id="be-daily-cups-box" class="text-3xl font-black my-1 text-slate-900">-- <span class="text-sm font-bold">ly/ngày</span></div>
+              <div class="text-xs text-slate-700">Doanh thu tối thiểu: <b id="be-daily-rev-box">-- đ/ngày</b></div>
+            </div>
+
+            <div class="bg-emerald-500/20 rounded-xl p-3 border border-emerald-400/40 text-center">
+              <div class="text-xs font-bold uppercase tracking-wider text-emerald-200">Mục Tiêu Đạt Lãi Kỳ Vọng</div>
+              <div id="be-target-daily-cups" class="text-2xl font-black text-white mt-1">-- <span class="text-sm font-semibold">ly/ngày</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 4: BẢO MẬT & HƯỚNG DẪN EXCEL -->
+    <div id="tab-guide" class="space-y-4 hidden">
+      <div class="bg-white p-6 rounded-xl border border-slate-200/90 shadow-sm space-y-5">
+        
+        <!-- Security Section -->
+        <div class="p-4 rounded-xl bg-amber-50 border border-amber-200 space-y-2">
+          <div class="flex items-center gap-2 text-amber-800 font-bold text-sm">
+            <i class="fa-solid fa-lock text-base text-amber-600"></i>
+            <span>Bảo Mật Nội Bộ: Giới Hạn Quyền Cho Đúng 2 Người</span>
+          </div>
+          <p class="text-xs text-amber-900/80 leading-relaxed">
+            Hệ thống áp dụng chính sách bảo mật xác thực phiên (Session Auth). Khi đưa lên mạng công khai, bất kỳ ai vào link web đều bắt buộc phải đăng nhập. Hiện tại hệ thống chỉ cấp quyền cho 2 tài khoản:
+          </p>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+            <div class="bg-white p-3 rounded-lg border border-amber-200 text-xs">
+              <div class="font-bold text-slate-800">Tài khoản 1: Chủ quán (Tấn Đạt)</div>
+              <div class="text-slate-600 mt-0.5">Tên đăng nhập: <code class="font-bold text-blue-600">tandat</code></div>
+            </div>
+            <div class="bg-white p-3 rounded-lg border border-amber-200 text-xs">
+              <div class="font-bold text-slate-800">Tài khoản 2: Cổ đông / Quản lý</div>
+              <div class="text-slate-600 mt-0.5">Tên đăng nhập: <code class="font-bold text-blue-600">partner</code></div>
+            </div>
+          </div>
+          <p class="text-[11px] text-amber-800 italic pt-1">
+            💡 Bạn có thể bấm vào biểu tượng chìa khóa cạnh tên người dùng ở góc trên bên phải để đổi mật khẩu sang mật khẩu riêng của bạn bất kỳ lúc nào.
+          </p>
+        </div>
+
+        <!-- Excel Section -->
+        <div class="space-y-3">
+          <h3 class="text-base font-bold text-slate-800 flex items-center gap-2">
+            <i class="fa-solid fa-file-excel text-emerald-600"></i>
+            <span>Đồng Bộ Vào Excel Chuẩn 5 Sheet Tự Động</span>
+          </h3>
+          <p class="text-xs text-slate-600 leading-relaxed">
+            Mỗi khi bạn thêm nguyên liệu mới, thay đổi công thức, thêm món mới hoặc cập nhật giá bán, hệ thống sẽ tự động cập nhật ngay lập tức vào tệp:
+            <code class="bg-slate-100 text-slate-800 px-2 py-0.5 rounded text-xs font-mono font-bold">Bang_Cost_Va_Chien_Luoc_Dinh_Gia_23_Coffee.xlsx</code>.
+          </p>
+
+          <div class="pt-2 flex items-center gap-3">
+            <button onclick="syncExcel(true)" class="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg text-sm shadow flex items-center gap-2">
+              <i class="fa-solid fa-arrows-rotate"></i>
+              <span>Đồng Bộ Excel Ngay Bây Giờ</span>
+            </button>
+            <a href="/api/download_excel" class="px-5 py-2.5 bg-brand-600 hover:bg-brand-700 text-white font-bold rounded-lg text-sm shadow flex items-center gap-2">
+              <i class="fa-solid fa-download"></i>
+              <span>Tải Xuống File Excel Về Máy</span>
+            </a>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+  </main>
+
+  <!-- MODAL: CHANGE PASSWORD -->
+  <div id="modal-change-password" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-sm w-full overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+      <div class="bg-brand-600 text-white px-5 py-3.5 flex items-center justify-between">
+        <h3 class="text-sm font-bold flex items-center gap-2">
+          <i class="fa-solid fa-key text-amber-300"></i>
+          <span>Đổi Mật Khẩu Đăng Nhập</span>
+        </h3>
+        <button onclick="closeChangePasswordModal()" class="text-slate-300 hover:text-white text-lg">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+      <div class="p-5 space-y-3">
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">Mật khẩu mới *</label>
+          <input type="password" id="new-password" placeholder="Nhập mật khẩu mới" class="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500">
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">Xác nhận mật khẩu mới *</label>
+          <input type="password" id="confirm-password" placeholder="Gõ lại mật khẩu mới" class="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500">
+        </div>
+      </div>
+      <div class="bg-slate-50 border-t border-slate-200 px-5 py-3 flex items-center justify-end gap-2">
+        <button onclick="closeChangePasswordModal()" class="px-3 py-1.5 border border-slate-300 rounded text-xs font-semibold text-slate-600">Hủy</button>
+        <button onclick="submitChangePassword()" class="px-4 py-1.5 bg-brand-600 hover:bg-brand-700 text-white rounded text-xs font-bold shadow">Lưu Mật Khẩu</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: DRINK (ADD / EDIT) -->
+  <div id="modal-drink" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-3xl w-full max-h-[92vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+      
+      <div class="bg-brand-600 text-white px-6 py-4 flex items-center justify-between">
+        <div>
+          <h3 id="modal-drink-title" class="text-lg font-bold">Thêm Món Mới Vào Menu</h3>
+          <p class="text-xs text-slate-200">Định lượng thành phần — Hệ thống tự tính chi phí và giá gợi ý tức thì</p>
+        </div>
+        <button onclick="closeDrinkModal()" class="text-slate-300 hover:text-white text-xl">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <div class="p-6 space-y-5 overflow-y-auto flex-1">
+        
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div>
+            <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Tên Thức Uống *</label>
+            <input type="text" id="drink-name" placeholder="Ví dụ: Trà Mãng Cầu Xiêm" class="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500">
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Nhóm Món *</label>
+            <select id="drink-category" class="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500">
+              <option value="Cà Phê Truyền Thống">Cà Phê Truyền Thống</option>
+              <option value="Cà Phê Sáng Tạo">Cà Phê Sáng Tạo</option>
+              <option value="Trà Trái Cây">Trà Trái Cây</option>
+              <option value="Trà Kem Cheese">Trà Kem Cheese</option>
+              <option value="Matcha Series">Matcha Series</option>
+              <option value="Trà Sữa">Trà Sữa</option>
+              <option value="Đá Xay - Frappe">Đá Xay - Frappe</option>
+              <option value="Món Khác">Món Khác</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Giá Bạn Chọn Bán (VNĐ) *</label>
+            <input type="number" id="drink-price" value="30000" step="1000" oninput="updateLiveCostPreview()" class="w-full px-3 py-2 text-sm font-bold text-brand-600 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500">
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 bg-slate-50 p-3.5 rounded-xl border border-slate-200">
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 mb-1">Quy Cách Đóng Gói (Bao Bì)</label>
+            <select id="drink-pkg" onchange="updateLiveCostPreview()" class="w-full px-3 py-1.5 text-sm border border-slate-300 rounded-lg bg-white"></select>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 mb-1">% Hao Hụt Pha Chế (Mặc định 5%)</label>
+            <div class="flex items-center gap-2">
+              <input type="number" id="drink-waste" value="5" step="0.5" min="0" max="20" oninput="updateLiveCostPreview()" class="w-24 px-3 py-1.5 text-sm border border-slate-300 rounded-lg bg-white text-right font-medium">
+              <span class="text-sm font-semibold text-slate-500">% (Sữa dính ca, siro đọng chai, đá tan)</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="space-y-3">
+          <div class="flex items-center justify-between">
+            <h4 class="text-sm font-bold text-slate-800 flex items-center gap-2">
+              <i class="fa-solid fa-blender text-amber-500"></i>
+              <span>Công Thức Thành Phần (SOP Pha Chế)</span>
+            </h4>
+            <div class="flex items-center gap-2">
+              <button type="button" onclick="openNewMaterialModal(true)" class="text-xs text-blue-600 hover:text-blue-800 underline font-medium">
+                + Thêm nhanh nguyên liệu mới
+              </button>
+              <button type="button" onclick="addRecipeRow()" class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-lg border border-slate-300 flex items-center gap-1">
+                <i class="fa-solid fa-plus text-brand-600"></i>
+                <span>Thêm Thành Phần</span>
+              </button>
+            </div>
+          </div>
+
+          <div id="recipe-rows-container" class="space-y-2"></div>
+        </div>
+
+        <div class="bg-gradient-to-r from-slate-900 to-brand-700 text-white p-4 rounded-xl shadow-inner space-y-3">
+          <div class="text-xs font-bold uppercase tracking-wider text-amber-300 flex items-center justify-between">
+            <span>Kết Quả Tính Toán Tự Động (Realtime)</span>
+            <span id="preview-badge" class="px-2 py-0.5 rounded text-[11px] font-bold bg-emerald-500 text-white">✅ Chuẩn Ngành</span>
+          </div>
+          <div class="grid grid-cols-2 md:grid-cols-4 gap-3 text-center">
+            <div class="bg-white/10 rounded-lg p-2">
+              <div class="text-[11px] text-slate-300">Cost NL (sau hao hụt)</div>
+              <div id="preview-cost-nl" class="text-sm font-bold text-white mt-0.5">0 đ</div>
+            </div>
+            <div class="bg-white/10 rounded-lg p-2">
+              <div class="text-[11px] text-slate-300">TỔNG COST 1 LY</div>
+              <div id="preview-cost-tot" class="text-base font-extrabold text-amber-300 mt-0.5">0 đ</div>
+            </div>
+            <div class="bg-white/10 rounded-lg p-2">
+              <div class="text-[11px] text-slate-300">Giá Gợi Ý (30% Cost)</div>
+              <div id="preview-cost-sug" class="text-sm font-bold text-white mt-0.5">0 đ</div>
+            </div>
+            <div class="bg-white/10 rounded-lg p-2">
+              <div class="text-[11px] text-slate-300">% Food Cost / Lãi Gộp</div>
+              <div id="preview-fc-profit" class="text-sm font-bold text-emerald-300 mt-0.5">0% (0 đ)</div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="bg-slate-50 border-t border-slate-200 px-6 py-3.5 flex items-center justify-end gap-3">
+        <input type="hidden" id="editing-drink-id" value="">
+        <button type="button" onclick="closeDrinkModal()" class="px-4 py-2 border border-slate-300 hover:bg-slate-100 rounded-lg text-sm font-semibold text-slate-700">Hủy Bỏ</button>
+        <button type="button" onclick="saveDrink()" class="px-5 py-2 bg-brand-600 hover:bg-brand-700 text-white rounded-lg text-sm font-bold shadow flex items-center gap-2">
+          <i class="fa-solid fa-check"></i>
+          <span>Lưu Món Vào Menu & Excel</span>
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- MODAL: MATERIAL (ADD / EDIT) -->
+  <div id="modal-material" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-lg w-full overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+      
+      <div class="bg-slate-800 text-white px-6 py-4 flex items-center justify-between">
+        <div>
+          <h3 id="modal-material-title" class="text-base font-bold">Thêm Nguyên Liệu Mới</h3>
+          <p class="text-xs text-slate-300">Nhập quy cách & giá sỉ — Đơn giá cơ sở sẽ tự động chia</p>
+        </div>
+        <button onclick="closeMaterialModal()" class="text-slate-300 hover:text-white text-xl">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <div class="p-6 space-y-4">
+        <div>
+          <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Tên Nguyên Liệu *</label>
+          <input type="text" id="mat-name" placeholder="Ví dụ: Trà Mãng Cầu, Siro Kiwi, Bột Khoai Môn..." class="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500">
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Quy Cách Mua Sỉ</label>
+            <input type="text" id="mat-pack" placeholder="Gói 1kg, Chai 1000ml, Hộp 500g" class="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg">
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Đơn Vị Mua Sỉ</label>
+            <input type="text" id="mat-unit-buy" placeholder="g, kg, ml, lít, hộp, chai" value="g" class="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg">
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Khối Lượng / Thể Tích *</label>
+            <input type="number" id="mat-qty" value="1000" min="1" oninput="calcMatUnitCost()" class="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg">
+            <span class="text-[11px] text-slate-400">Quy về g, ml hoặc cái</span>
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Giá Mua Sỉ (VNĐ) *</label>
+            <input type="number" id="mat-price" value="100000" step="1000" oninput="calcMatUnitCost()" class="w-full px-3 py-2 text-sm font-bold border border-slate-300 rounded-lg">
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3 bg-amber-50 p-3 rounded-lg border border-amber-200">
+          <div>
+            <label class="block text-[11px] font-bold text-amber-800 uppercase mb-1">Đơn Giá Cơ Sở Tự Tính</label>
+            <div id="mat-unit-cost-preview" class="text-lg font-black text-amber-700">100.00 đ</div>
+          </div>
+          <div>
+            <label class="block text-[11px] font-bold text-amber-800 uppercase mb-1">Đơn Vị Cơ Sở</label>
+            <select id="mat-unit-base" class="w-full px-2 py-1 text-sm border border-amber-300 rounded bg-white">
+              <option value="g">g (gram)</option>
+              <option value="ml">ml (mili-lít)</option>
+              <option value="trái">trái / quả</option>
+              <option value="miếng">miếng / lát</option>
+              <option value="cái">cái</option>
+            </select>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Ghi Chú Sử Dụng (Tùy chọn)</label>
+          <input type="text" id="mat-note" placeholder="Dùng cho dòng trà trái cây, ủ trà..." class="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg">
+        </div>
+
+      </div>
+
+      <div class="bg-slate-50 border-t border-slate-200 px-6 py-3.5 flex items-center justify-end gap-3">
+        <input type="hidden" id="editing-mat-id" value="">
+        <button type="button" onclick="closeMaterialModal()" class="px-4 py-2 border border-slate-300 hover:bg-slate-100 rounded-lg text-sm font-semibold text-slate-700">Hủy</button>
+        <button type="button" onclick="saveMaterial()" class="px-5 py-2 bg-brand-600 hover:bg-brand-700 text-white rounded-lg text-sm font-bold shadow">
+          Lưu Nguyên Liệu
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- TOAST NOTIFICATION -->
+  <div id="toast" class="fixed bottom-5 right-5 z-50 transform translate-y-20 opacity-0 transition-all duration-300 max-w-md bg-slate-900 text-white px-4 py-3 rounded-xl shadow-2xl flex items-center gap-3 border border-slate-700">
+    <div id="toast-icon" class="text-emerald-400 text-lg"><i class="fa-solid fa-circle-check"></i></div>
+    <div id="toast-message" class="text-sm font-medium">Thông báo</div>
+  </div>
+
+  <script>
+    let appData = {
+      materials: [],
+      packaging: [],
+      drinks: [],
+      fixed_costs: [],
+      summary: {}
+    };
+    let activeCategory = 'all';
+    let returnToDrinkModalAfterMat = false;
+
+    document.addEventListener("DOMContentLoaded", () => {
+      fetchData();
+    });
+
+    async function fetchData() {
+      try {
+        const res = await fetch("/api/data");
+        if (res.status === 401) {
+          window.location.href = "/login";
+          return;
+        }
+        appData = await res.json();
+        renderSummary();
+        renderCategories();
+        renderDrinks();
+        renderMaterials();
+        renderFixedCosts();
+        populatePackagingDropdown();
+      } catch (err) {
+        showToast("Không thể tải dữ liệu: " + err.message, "danger");
+      }
+    }
+
+    function showToast(msg, type = "success") {
+      const toast = document.getElementById("toast");
+      const toastMsg = document.getElementById("toast-message");
+      const toastIcon = document.getElementById("toast-icon");
+      
+      toastMsg.innerText = msg;
+      if (type === "danger") {
+        toastIcon.innerHTML = '<i class="fa-solid fa-circle-exclamation text-red-400"></i>';
+      } else {
+        toastIcon.innerHTML = '<i class="fa-solid fa-circle-check text-emerald-400"></i>';
+      }
+      
+      toast.classList.remove("translate-y-20", "opacity-0");
+      setTimeout(() => {
+        toast.classList.add("translate-y-20", "opacity-0");
+      }, 3500);
+    }
+
+    function switchTab(tabId) {
+      const tabs = ['drinks', 'materials', 'fixed-costs', 'guide'];
+      tabs.forEach(t => {
+        const el = document.getElementById('tab-' + t);
+        const btn = document.getElementById('tab-btn-' + t);
+        if (t === tabId) {
+          el.classList.remove('hidden');
+          btn.className = "px-4 py-2.5 text-brand-600 border-b-2 border-brand-600 flex items-center gap-2 whitespace-nowrap transition";
+        } else {
+          el.classList.add('hidden');
+          btn.className = "px-4 py-2.5 text-slate-500 hover:text-slate-800 border-b-2 border-transparent flex items-center gap-2 whitespace-nowrap transition";
+        }
+      });
+    }
+
+    function formatNumber(num) {
+      if (num === null || num === undefined || isNaN(num)) return "0";
+      return Math.round(num).toLocaleString('vi-VN');
+    }
+
+    function renderSummary() {
+      const s = appData.summary || {};
+      document.getElementById("stat-drinks").innerText = (s.num_drinks || 0) + " món";
+      document.getElementById("stat-materials").innerText = (s.num_materials || 0) + " loại";
+      document.getElementById("stat-price").innerText = formatNumber(s.avg_price) + " đ";
+      document.getElementById("stat-fc").innerText = (s.avg_food_cost_pct || 0) + "%";
+      document.getElementById("stat-profit").innerText = formatNumber(s.avg_profit) + " đ";
+      document.getElementById("stat-beday").innerText = (s.be_daily_cups || 0) + " ly";
+      
+      document.getElementById("tab-cnt-drinks").innerText = s.num_drinks || 0;
+      document.getElementById("tab-cnt-materials").innerText = s.num_materials || 0;
+
+      document.getElementById("be-aov").innerText = formatNumber(s.avg_price) + " đ/ly";
+      document.getElementById("be-cm").innerText = formatNumber(s.avg_profit) + " đ/ly";
+      document.getElementById("be-daily-cups-box").innerHTML = `${s.be_daily_cups || 0} <span class="text-sm font-bold">ly/ngày</span>`;
+      document.getElementById("be-daily-rev-box").innerText = formatNumber(s.be_daily_revenue) + " đ/ngày";
+      document.getElementById("be-target-daily-cups").innerHTML = `${s.target_daily_cups || 0} <span class="text-sm font-semibold">ly/ngày</span>`;
+      document.getElementById("total-fixed-cost-display").innerText = formatNumber(s.total_fixed_cost) + " đ";
+    }
+
+    function renderCategories() {
+      const container = document.getElementById("category-filters");
+      const cats = Array.from(new Set(appData.drinks.map(d => d.category || "Món Khác")));
+      
+      let html = `<button onclick="filterCategory('all')" class="px-2.5 py-1 text-xs rounded-lg font-semibold transition ${activeCategory === 'all' ? 'bg-brand-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}">Tất Cả (${appData.drinks.length})</button>`;
+      
+      cats.forEach(c => {
+        const count = appData.drinks.filter(d => d.category === c).length;
+        html += `<button onclick="filterCategory('${c}')" class="px-2.5 py-1 text-xs rounded-lg font-semibold transition ${activeCategory === c ? 'bg-brand-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}">${c} (${count})</button>`;
+      });
+      container.innerHTML = html;
+    }
+
+    function filterCategory(cat) {
+      activeCategory = cat;
+      renderCategories();
+      renderDrinks();
+    }
+
+    function renderDrinks() {
+      const tbody = document.getElementById("drinks-table-body");
+      const query = (document.getElementById("search-drink").value || "").toLowerCase().trim();
+      
+      let filtered = appData.drinks.filter(d => {
+        const matchCat = (activeCategory === 'all' || d.category === activeCategory);
+        const matchQuery = !query || d.name.toLowerCase().includes(query) || (d.category && d.category.toLowerCase().includes(query));
+        return matchCat && matchQuery;
+      });
+
+      if (filtered.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="12" class="text-center py-8 text-slate-400">Không tìm thấy món nào phù hợp.</td></tr>`;
+        return;
+      }
+
+      let html = "";
+      filtered.forEach((d, idx) => {
+        html += `
+          <tr class="hover:bg-slate-50 transition border-b border-slate-100">
+            <td class="py-3 px-4 text-center text-xs text-slate-400 font-bold">${idx + 1}</td>
+            <td class="py-3 px-4 font-bold text-slate-800">
+              <div class="flex items-center gap-2">
+                <span>${d.name}</span>
+              </div>
+            </td>
+            <td class="py-3 px-4 text-xs text-slate-500">${d.category || '-'}</td>
+            <td class="py-3 px-4 text-right">${formatNumber(d.cost_nl)} đ</td>
+            <td class="py-3 px-4 text-right text-xs text-slate-500">${formatNumber(d.cost_bb)} đ</td>
+            <td class="py-3 px-4 text-right font-bold text-slate-800">${formatNumber(d.total_cost)} đ</td>
+            <td class="py-3 px-4 text-right text-xs text-slate-500">${formatNumber(d.suggested_price)} đ</td>
+            <td class="py-3 px-4 text-right font-black text-brand-600 text-sm">${formatNumber(d.selling_price)} đ</td>
+            <td class="py-3 px-4 text-center font-bold">
+              <span class="inline-block px-2 py-0.5 rounded-full text-xs ${d.food_cost_pct > 35 ? 'bg-red-100 text-red-700' : (d.food_cost_pct < 25 ? 'bg-purple-100 text-purple-700' : 'bg-emerald-100 text-emerald-700')}">
+                ${d.food_cost_pct}%
+              </span>
+            </td>
+            <td class="py-3 px-4 text-right font-bold text-emerald-600">${formatNumber(d.profit)} đ</td>
+            <td class="py-3 px-4 text-center text-xs whitespace-nowrap">
+              <span class="px-2 py-0.5 rounded text-[11px] font-semibold ${d.badge_class}">
+                ${d.warning}
+              </span>
+            </td>
+            <td class="py-3 px-4 text-center">
+              <div class="flex items-center justify-center gap-1.5">
+                <button onclick="editDrink('${d.id}')" class="p-1.5 text-blue-600 hover:bg-blue-50 rounded" title="Chỉnh sửa công thức & giá">
+                  <i class="fa-solid fa-pen-to-square"></i>
+                </button>
+                <button onclick="deleteDrink('${d.id}', '${d.name}')" class="p-1.5 text-red-500 hover:bg-red-50 rounded" title="Xóa món">
+                  <i class="fa-regular fa-trash-can"></i>
+                </button>
+              </div>
+            </td>
+          </tr>
+        `;
+      });
+      tbody.innerHTML = html;
+    }
+
+    function renderMaterials() {
+      const tbody = document.getElementById("materials-table-body");
+      const query = (document.getElementById("search-material").value || "").toLowerCase().trim();
+
+      let filtered = appData.materials.filter(m => {
+        return !query || m.name.toLowerCase().includes(query) || (m.note && m.note.toLowerCase().includes(query));
+      });
+
+      if (filtered.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="9" class="text-center py-8 text-slate-400">Không có nguyên liệu nào.</td></tr>`;
+        return;
+      }
+
+      let html = "";
+      filtered.forEach((m) => {
+        html += `
+          <tr class="hover:bg-slate-50 transition border-b border-slate-100">
+            <td class="py-2.5 px-4 text-center text-xs text-slate-400 font-bold">${m.id}</td>
+            <td class="py-2.5 px-4 font-bold text-slate-800">${m.name}</td>
+            <td class="py-2.5 px-4 text-xs text-slate-500">${m.pack || '-'}</td>
+            <td class="py-2.5 px-4 text-right">${formatNumber(m.qty)} ${m.unit_base}</td>
+            <td class="py-2.5 px-4 text-right font-medium text-slate-700">${formatNumber(m.price)} đ</td>
+            <td class="py-2.5 px-4 text-right font-bold text-brand-600">${m.unit_cost.toLocaleString('vi-VN')} đ</td>
+            <td class="py-2.5 px-4 text-center text-xs text-slate-500 font-semibold">${m.unit_base}</td>
+            <td class="py-2.5 px-4 text-xs text-slate-500 max-w-xs truncate">${m.note || '-'}</td>
+            <td class="py-2.5 px-4 text-center">
+              <div class="flex items-center justify-center gap-1.5">
+                <button onclick="editMaterial('${m.id}')" class="p-1.5 text-blue-600 hover:bg-blue-50 rounded" title="Chỉnh sửa giá / quy cách">
+                  <i class="fa-solid fa-pen-to-square"></i>
+                </button>
+                <button onclick="deleteMaterial('${m.id}', '${m.name}')" class="p-1.5 text-red-500 hover:bg-red-50 rounded" title="Xóa nguyên liệu">
+                  <i class="fa-regular fa-trash-can"></i>
+                </button>
+              </div>
+            </td>
+          </tr>
+        `;
+      });
+      tbody.innerHTML = html;
+    }
+
+    function renderFixedCosts() {
+      const tbody = document.getElementById("fixed-costs-table-body");
+      let html = "";
+      appData.fixed_costs.forEach((fc, idx) => {
+        html += `
+          <tr>
+            <td class="py-2.5 px-3 text-center text-xs text-slate-400 font-bold">${idx + 1}</td>
+            <td class="py-2.5 px-3 font-semibold text-slate-800">${fc.name}</td>
+            <td class="py-2.5 px-3 text-right">
+              <input type="number" step="100000" id="fc-cost-${idx}" class="w-36 text-right px-2 py-1 text-sm border border-slate-300 rounded font-bold text-slate-700" value="${fc.cost}" onchange="updateTotalFixedCostDisplay()">
+            </td>
+            <td class="py-2.5 px-3 text-xs text-slate-500">${fc.note || '-'}</td>
+          </tr>
+        `;
+      });
+      tbody.innerHTML = html;
+      if (appData.summary && appData.summary.target_profit) {
+        document.getElementById("target-profit-input").value = appData.summary.target_profit;
+      }
+    }
+
+    function updateTotalFixedCostDisplay() {
+      let sum = 0;
+      appData.fixed_costs.forEach((fc, idx) => {
+        const val = parseFloat(document.getElementById(`fc-cost-${idx}`).value) || 0;
+        sum += val;
+      });
+      document.getElementById("total-fixed-cost-display").innerText = formatNumber(sum) + " đ";
+    }
+
+    async function saveFixedCosts() {
+      const newCosts = appData.fixed_costs.map((fc, idx) => {
+        const val = parseFloat(document.getElementById(`fc-cost-${idx}`).value) || 0;
+        return { ...fc, cost: val };
+      });
+      const targetProfit = parseFloat(document.getElementById("target-profit-input").value) || 15000000;
+      
+      try {
+        const res = await fetch("/api/fixed_costs", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ fixed_costs: newCosts, target_profit: targetProfit })
+        });
+        const data = await res.json();
+        if (data.success) {
+          showToast("Đã lưu chi phí cố định & cập nhật hòa vốn vào Excel!");
+          fetchData();
+        }
+      } catch (err) {
+        showToast("Lỗi lưu chi phí: " + err.message, "danger");
+      }
+    }
+
+    function populatePackagingDropdown() {
+      const select = document.getElementById("drink-pkg");
+      select.innerHTML = appData.packaging.map(p => `
+        <option value="${p.id}">${p.name} (${formatNumber(p.total)} đ)</option>
+      `).join("");
+    }
+
+    function addRecipeRow(ingName = "", qty = 10) {
+      const container = document.getElementById("recipe-rows-container");
+      const rowId = "recipe-row-" + Date.now() + "-" + Math.random().toString(36).substr(2, 4);
+
+      const div = document.createElement("div");
+      div.id = rowId;
+      div.className = "flex items-center gap-2 bg-slate-50 p-2 rounded-lg border border-slate-200";
+
+      const options = appData.materials.map(m => {
+        const isSelected = m.name.toLowerCase().trim() === ingName.toLowerCase().trim();
+        return `<option value="${m.name}" data-unit="${m.unit_base}" data-cost="${m.unit_cost}" ${isSelected ? 'selected' : ''}>${m.name} (${m.unit_cost.toLocaleString('vi-VN')} đ/${m.unit_base})</option>`;
+      }).join("");
+
+      div.innerHTML = `
+        <div class="flex-1">
+          <select onchange="onIngredientChange('${rowId}')" class="ing-select w-full px-2.5 py-1.5 text-sm border border-slate-300 rounded bg-white">
+            <option value="">-- Chọn nguyên liệu --</option>
+            ${options}
+          </select>
+        </div>
+        <div class="w-24">
+          <input type="number" step="0.5" min="0" value="${qty}" oninput="updateLiveCostPreview()" class="ing-qty w-full px-2 py-1.5 text-sm border border-slate-300 rounded text-right font-bold text-slate-800" placeholder="Số lượng">
+        </div>
+        <div class="w-14 text-xs font-semibold text-slate-500 ing-unit text-center">g</div>
+        <div class="w-24 text-right text-xs font-bold text-slate-700 ing-cost">0 đ</div>
+        <button type="button" onclick="removeRecipeRow('${rowId}')" class="text-red-400 hover:text-red-600 p-1.5" title="Xóa dòng">
+          <i class="fa-solid fa-trash-can text-sm"></i>
+        </button>
+      `;
+
+      container.appendChild(div);
+      onIngredientChange(rowId);
+    }
+
+    function removeRecipeRow(rowId) {
+      const row = document.getElementById(rowId);
+      if (row) row.remove();
+      updateLiveCostPreview();
+    }
+
+    function onIngredientChange(rowId) {
+      const row = document.getElementById(rowId);
+      if (!row) return;
+      const select = row.querySelector(".ing-select");
+      const unitSpan = row.querySelector(".ing-unit");
+      const selectedOption = select.options[select.selectedIndex];
+      if (selectedOption && selectedOption.dataset.unit) {
+        unitSpan.innerText = selectedOption.dataset.unit;
+      } else {
+        unitSpan.innerText = "g";
+      }
+      updateLiveCostPreview();
+    }
+
+    function updateLiveCostPreview() {
+      const rows = document.querySelectorAll("#recipe-rows-container > div");
+      let totalRawCost = 0;
+
+      rows.forEach(row => {
+        const select = row.querySelector(".ing-select");
+        const qtyInput = row.querySelector(".ing-qty");
+        const costDiv = row.querySelector(".ing-cost");
+
+        const selectedOption = select.options[select.selectedIndex];
+        const unitCost = selectedOption && selectedOption.dataset.cost ? parseFloat(selectedOption.dataset.cost) : 0;
+        const qty = parseFloat(qtyInput.value) || 0;
+        const subCost = Math.round(qty * unitCost);
+
+        costDiv.innerText = formatNumber(subCost) + " đ";
+        totalRawCost += subCost;
+      });
+
+      const pkgSelect = document.getElementById("drink-pkg");
+      const pkgId = pkgSelect.value;
+      const pkgObj = appData.packaging.find(p => p.id === pkgId) || { total: 1100 };
+      const pkgCost = parseFloat(pkgObj.total) || 1100;
+
+      const wastePct = (parseFloat(document.getElementById("drink-waste").value) || 5) / 100;
+      const costNlWithWaste = Math.round(totalRawCost * (1 + wastePct));
+      const totalCost = costNlWithWaste + pkgCost;
+      const suggestedPrice = Math.ceil((totalCost / 0.3) / 1000) * 1000;
+
+      const sellingPrice = parseFloat(document.getElementById("drink-price").value) || 0;
+      const fcPct = sellingPrice > 0 ? (totalCost / sellingPrice * 100) : 0;
+      const profit = sellingPrice - totalCost;
+
+      document.getElementById("preview-cost-nl").innerText = formatNumber(costNlWithWaste) + " đ";
+      document.getElementById("preview-cost-tot").innerText = formatNumber(totalCost) + " đ";
+      document.getElementById("preview-cost-sug").innerText = formatNumber(suggestedPrice) + " đ";
+      document.getElementById("preview-fc-profit").innerText = `${fcPct.toFixed(1)}% (${formatNumber(profit)} đ)`;
+
+      const badge = document.getElementById("preview-badge");
+      if (fcPct > 35) {
+        badge.className = "px-2 py-0.5 rounded text-[11px] font-bold bg-red-500 text-white";
+        badge.innerText = "⚠️ Cost Cao (>35%)";
+      } else if (fcPct < 25) {
+        badge.className = "px-2 py-0.5 rounded text-[11px] font-bold bg-purple-500 text-white";
+        badge.innerText = "💎 Lãi Rất Dày (<25%)";
+      } else {
+        badge.className = "px-2 py-0.5 rounded text-[11px] font-bold bg-emerald-500 text-white";
+        badge.innerText = "✅ Chuẩn Ngành (25-35%)";
+      }
+    }
+
+    function openNewDrinkModal() {
+      document.getElementById("modal-drink-title").innerText = "Thêm Món Mới Vào Menu";
+      document.getElementById("editing-drink-id").value = "";
+      document.getElementById("drink-name").value = "";
+      document.getElementById("drink-price").value = "30000";
+      document.getElementById("drink-waste").value = "5";
+      document.getElementById("drink-category").value = "Trà Trái Cây";
+      document.getElementById("recipe-rows-container").innerHTML = "";
+
+      addRecipeRow("", 100);
+      addRecipeRow("", 20);
+
+      document.getElementById("modal-drink").classList.remove("hidden");
+      updateLiveCostPreview();
+    }
+
+    function editDrink(drinkId) {
+      const d = appData.drinks.find(item => item.id === drinkId);
+      if (!d) return;
+
+      document.getElementById("modal-drink-title").innerText = "Chỉnh Sửa Món: " + d.name;
+      document.getElementById("editing-drink-id").value = d.id;
+      document.getElementById("drink-name").value = d.name;
+      document.getElementById("drink-price").value = d.selling_price;
+      document.getElementById("drink-waste").value = (d.waste_pct * 100).toFixed(1);
+      document.getElementById("drink-category").value = d.category || "Món Khác";
+      if (d.pkg_id) document.getElementById("drink-pkg").value = d.pkg_id;
+
+      const container = document.getElementById("recipe-rows-container");
+      container.innerHTML = "";
+
+      if (d.recipe && d.recipe.length > 0) {
+        d.recipe.forEach(ing => {
+          addRecipeRow(ing.name, ing.qty);
+        });
+      } else {
+        addRecipeRow("", 20);
+      }
+
+      document.getElementById("modal-drink").classList.remove("hidden");
+      updateLiveCostPreview();
+    }
+
+    function closeDrinkModal() {
+      document.getElementById("modal-drink").classList.add("hidden");
+    }
+
+    async function saveDrink() {
+      const drinkId = document.getElementById("editing-drink-id").value;
+      const name = document.getElementById("drink-name").value.trim();
+      const category = document.getElementById("drink-category").value;
+      const sellingPrice = parseFloat(document.getElementById("drink-price").value) || 0;
+      const wastePct = (parseFloat(document.getElementById("drink-waste").value) || 5) / 100;
+      const pkgId = document.getElementById("drink-pkg").value;
+
+      if (!name) {
+        alert("Vui lòng nhập tên thức uống!");
+        return;
+      }
+
+      const recipe = [];
+      const rows = document.querySelectorAll("#recipe-rows-container > div");
+      rows.forEach(row => {
+        const select = row.querySelector(".ing-select");
+        const qtyInput = row.querySelector(".ing-qty");
+        const ingName = select.value.trim();
+        const qty = parseFloat(qtyInput.value) || 0;
+        if (ingName && qty > 0) {
+          const opt = select.options[select.selectedIndex];
+          recipe.push({
+            name: ingName,
+            qty: qty,
+            unit: opt.dataset.unit || "g"
+          });
+        }
+      });
+
+      if (recipe.length === 0) {
+        alert("Vui lòng thêm ít nhất 1 nguyên liệu vào công thức!");
+        return;
+      }
+
+      const payload = {
+        name, category, selling_price: sellingPrice, waste_pct: wastePct, pkg_id: pkgId, recipe
+      };
+
+      try {
+        let url = "/api/drinks";
+        let method = "POST";
+        if (drinkId) {
+          url = "/api/drinks/" + drinkId;
+          method = "PUT";
+        }
+
+        const res = await fetch(url, {
+          method: method,
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+        const result = await res.json();
+        if (result.error) {
+          alert("Lỗi: " + result.error);
+          return;
+        }
+
+        closeDrinkModal();
+        showToast(drinkId ? "Đã cập nhật món & đồng bộ vào Excel!" : "Đã tạo món mới & đồng bộ vào Excel!");
+        fetchData();
+      } catch (err) {
+        alert("Lỗi lưu món: " + err.message);
+      }
+    }
+
+    async function deleteDrink(id, name) {
+      if (!confirm(`Bạn có chắc muốn xóa món "${name}" khỏi Menu?`)) return;
+      try {
+        const res = await fetch("/api/drinks/" + id, { method: "DELETE" });
+        const data = await res.json();
+        if (data.success) {
+          showToast(`Đã xóa món "${name}" khỏi Menu & Excel!`);
+          fetchData();
+        } else {
+          alert(data.error);
+        }
+      } catch (err) {
+        alert("Lỗi xóa: " + err.message);
+      }
+    }
+
+    function openNewMaterialModal(fromRecipe = false) {
+      returnToDrinkModalAfterMat = fromRecipe;
+      document.getElementById("modal-material-title").innerText = "Thêm Nguyên Liệu Mới";
+      document.getElementById("editing-mat-id").value = "";
+      document.getElementById("mat-name").value = "";
+      document.getElementById("mat-pack").value = "Gói 1kg";
+      document.getElementById("mat-unit-buy").value = "kg";
+      document.getElementById("mat-qty").value = "1000";
+      document.getElementById("mat-price").value = "150000";
+      document.getElementById("mat-unit-base").value = "g";
+      document.getElementById("mat-note").value = "";
+      calcMatUnitCost();
+      document.getElementById("modal-material").classList.remove("hidden");
+    }
+
+    function editMaterial(matId) {
+      const m = appData.materials.find(item => item.id === matId);
+      if (!m) return;
+      returnToDrinkModalAfterMat = false;
+      document.getElementById("modal-material-title").innerText = "Chỉnh Sửa Nguyên Liệu: " + m.name;
+      document.getElementById("editing-mat-id").value = m.id;
+      document.getElementById("mat-name").value = m.name;
+      document.getElementById("mat-pack").value = m.pack;
+      document.getElementById("mat-unit-buy").value = m.unit_buy;
+      document.getElementById("mat-qty").value = m.qty;
+      document.getElementById("mat-price").value = m.price;
+      document.getElementById("mat-unit-base").value = m.unit_base;
+      document.getElementById("mat-note").value = m.note;
+      calcMatUnitCost();
+      document.getElementById("modal-material").classList.remove("hidden");
+    }
+
+    function closeMaterialModal() {
+      document.getElementById("modal-material").classList.add("hidden");
+    }
+
+    function calcMatUnitCost() {
+      const qty = parseFloat(document.getElementById("mat-qty").value) || 1;
+      const price = parseFloat(document.getElementById("mat-price").value) || 0;
+      const unitCost = Math.round((price / qty) * 100) / 100;
+      document.getElementById("mat-unit-cost-preview").innerText = unitCost.toLocaleString('vi-VN') + " đ";
+    }
+
+    async function saveMaterial() {
+      const matId = document.getElementById("editing-mat-id").value;
+      const name = document.getElementById("mat-name").value.trim();
+      const pack = document.getElementById("mat-pack").value.trim();
+      const unitBuy = document.getElementById("mat-unit-buy").value.trim();
+      const qty = parseFloat(document.getElementById("mat-qty").value) || 1;
+      const price = parseFloat(document.getElementById("mat-price").value) || 0;
+      const unitBase = document.getElementById("mat-unit-base").value;
+      const note = document.getElementById("mat-note").value.trim();
+
+      if (!name) {
+        alert("Vui lòng nhập tên nguyên liệu!");
+        return;
+      }
+
+      const payload = {
+        name, pack, unit_buy: unitBuy, qty, price, unit_base: unitBase, note
+      };
+
+      try {
+        let url = "/api/materials";
+        let method = "POST";
+        if (matId) {
+          url = "/api/materials/" + matId;
+          method = "PUT";
+        }
+
+        const res = await fetch(url, {
+          method: method,
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+        const result = await res.json();
+        if (result.error) {
+          alert("Lỗi: " + result.error);
+          return;
+        }
+
+        closeMaterialModal();
+        showToast(matId ? "Đã cập nhật nguyên liệu & đồng bộ menu!" : "Đã tạo nguyên liệu mới & đồng bộ vào Excel!");
+        await fetchData();
+
+        if (returnToDrinkModalAfterMat) {
+          addRecipeRow(name, 20);
+        }
+      } catch (err) {
+        alert("Lỗi lưu nguyên liệu: " + err.message);
+      }
+    }
+
+    async function deleteMaterial(id, name) {
+      if (!confirm(`Bạn có chắc muốn xóa nguyên liệu "${name}"?`)) return;
+      try {
+        const res = await fetch("/api/materials/" + id, { method: "DELETE" });
+        const data = await res.json();
+        if (data.success) {
+          showToast(`Đã xóa nguyên liệu "${name}"!`);
+          fetchData();
+        } else {
+          alert(data.error);
+        }
+      } catch (err) {
+        alert("Lỗi xóa: " + err.message);
+      }
+    }
+
+    async function syncExcel(notify = true) {
+      try {
+        const res = await fetch("/api/sync_excel", { method: "POST" });
+        const result = await res.json();
+        if (result.success) {
+          if (notify) {
+            if (result.is_main) {
+              showToast("Đã ghi & căn chỉnh tự động vào file Excel chính thành công!");
+            } else {
+              showToast(result.message, "danger");
+            }
+          }
+        } else {
+          alert("Lỗi đồng bộ Excel: " + result.error);
+        }
+      } catch (err) {
+        alert("Lỗi: " + err.message);
+      }
+    }
+
+    // Change Password Modal
+    function openChangePasswordModal() {
+      document.getElementById("new-password").value = "";
+      document.getElementById("confirm-password").value = "";
+      document.getElementById("modal-change-password").classList.remove("hidden");
+    }
+
+    function closeChangePasswordModal() {
+      document.getElementById("modal-change-password").classList.add("hidden");
+    }
+
+    async function submitChangePassword() {
+      const p1 = document.getElementById("new-password").value;
+      const p2 = document.getElementById("confirm-password").value;
+      if (!p1) {
+        alert("Vui lòng nhập mật khẩu mới!");
+        return;
+      }
+      if (p1 !== p2) {
+        alert("Mật khẩu xác nhận không khớp!");
+        return;
+      }
+      try {
+        const res = await fetch("/api/change_password", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ new_password: p1 })
+        });
+        const data = await res.json();
+        if (data.success) {
+          closeChangePasswordModal();
+          showToast("Đã đổi mật khẩu thành công!");
+        } else {
+          alert("Lỗi: " + data.error);
+        }
+      } catch (err) {
+        alert("Lỗi: " + err.message);
+      }
+    }
+  </script>
+</body>
+</html>
