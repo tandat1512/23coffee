@@ -133,6 +133,14 @@ def push_to_google_sheets(data):
                 save_google_config({"last_synced": now_str, "last_status": "Thành công (" + now_str + ")"})
                 return {"success": True, "message": "Đã gửi dữ liệu sang Google Sheets!", "timestamp": now_str}
                 
+    except urllib.error.HTTPError as e:
+        if e.code in [401, 403]:
+            friendly_err = "Lỗi quyền truy cập (Unauthorized): Trong Apps Script, mục 'Ai có quyền truy cập' (Who has access) bạn cần chọn là 'Bất kỳ ai' (Anyone) thay vì 'Chỉ mình tôi'."
+            save_google_config({"last_status": "Lỗi 401: Cần chọn quyền 'Bất kỳ ai'"})
+            return {"success": False, "error": friendly_err}
+        err_msg = f"Lỗi máy chủ Google HTTP {e.code}: {e.reason}"
+        save_google_config({"last_status": err_msg})
+        return {"success": False, "error": err_msg}
     except urllib.error.URLError as e:
         save_google_config({"last_status": f"Lỗi kết nối: {e.reason}"})
         return {"success": False, "error": f"Không thể kết nối đến Google Sheets: {e.reason}"}
