@@ -146,6 +146,16 @@ def load_data():
         
     return {"materials": [], "packaging": [], "drinks": [], "fixed_costs": [], "target_profit": 15000000}
 
+def prepare_google_payload(data):
+    metrics = calculate_metrics(data)
+    return {
+        "materials": data.get("materials", []),
+        "packaging": data.get("packaging", []),
+        "drinks": metrics.get("drinks", []),
+        "fixed_costs": data.get("fixed_costs", []),
+        "target_profit": data.get("target_profit", 15000000)
+    }
+
 def save_data(data):
     # 1. Save to JSON
     with open(DATA_FILE, "w", encoding="utf-8") as f:
@@ -154,8 +164,9 @@ def save_data(data):
     # 2. Persist to SQLite Database
     save_snapshot_to_db(data)
     
-    # 3. Asynchronously push to Google Sheets (if configured)
-    trigger_async_sync(data)
+    # 3. Asynchronously push to Google Sheets (if configured) with calculated metrics
+    payload = prepare_google_payload(data)
+    trigger_async_sync(payload)
 
 def calculate_metrics(data):
     materials_map = {m["name"].lower().strip(): m for m in data.get("materials", [])}
@@ -493,18 +504,7 @@ def google_sync_config():
 @app.route("/api/google_sync/push", methods=["POST"])
 def trigger_google_push():
     data = load_data()
-    # Calculate detailed food costs & metrics before pushing
-    metrics = calculate_metrics(data)
-    
-    # Format payload with computed cost_nl for drinks
-    payload = {
-        "materials": data.get("materials", []),
-        "packaging": data.get("packaging", []),
-        "drinks": metrics.get("drinks", []),
-        "fixed_costs": data.get("fixed_costs", []),
-        "target_profit": data.get("target_profit", 15000000)
-    }
-    
+    payload = prepare_google_payload(data)
     res = push_to_google_sheets(payload)
     return jsonify(res)
 

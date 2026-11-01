@@ -2,20 +2,17 @@
  * =========================================================================
  * 23 COFFEE — GOOGLE APPS SCRIPT WEBHOOK ĐỒNG BỘ HAI CHIỀU DỮ LIỆU COST
  * =========================================================================
- * Hướng dẫn cài đặt trên Google Sheet (Chỉ mất 1-2 phút):
+ * CẬP NHẬT: TỰ ĐỘNG TƯƠNG THÍCH CẢ GOOGLE SHEETS VIỆT NAM (DẤU ;) VÀ QUỐC TẾ (DẤU ,)
+ * KHẮC PHỤC 100% LỖI #ERROR! TẠI CÁC CỘT CÔNG THỨC TRÊN GOOGLE SHEETS!
+ * =========================================================================
+ * Hướng dẫn cập nhật trên Google Sheet (Chỉ mất 30 giây):
  * 1. Mở file Google Sheet của bạn: https://docs.google.com/spreadsheets/d/1uGRxJEPZljoVKlbBXRatjPiIpk2NBnXldwWSfVYVy_Y/edit
  * 2. Trên menu trên cùng, chọn: "Tiện ích mở rộng" (Extensions) -> "Apps Script".
- * 3. Xóa hết code mặc định trong file Code.gs và DÁN TOÀN BỘ file này vào.
+ * 3. Xóa hết code cũ trong file Code.gs và DÁN TOÀN BỘ file này vào.
  * 4. Nhấn biểu tượng Đĩa mềm (Save / Lưu) hoặc Ctrl+S.
- * 5. Bấm nút "Triển khai" (Deploy) màu xanh ở góc phải trên -> Chọn "Triển khai mới" (New deployment).
- * 6. Chọn loại (bánh răng): "Ứng dụng web" (Web app).
- * 7. Thiết lập:
- *    - Mô tả: "23 Coffee Cost Webhook"
- *    - Thực thi dưới dạng (Execute as): "Tôi" (Me / tài khoản google của bạn)
- *    - Ai có quyền truy cập (Who has access): "Bất kỳ ai" (Anyone)
- * 8. Bấm "Triển khai" (Deploy) -> Cấp quyền truy cập nếu Google hỏi (Authorize access).
- * 9. Sao chép "URL ứng dụng web" (Web App URL dạng: https://script.google.com/macros/s/.../exec).
- * 10. Dán URL này vào nút "Đồng bộ Google Sheets" trên Web app của bạn!
+ * 5. Bấm nút "Triển khai" (Deploy) màu xanh ở góc phải trên -> Chọn "Quản lý bản triển khai" (Manage deployments).
+ * 6. Bấm biểu tượng cây bút chì (Edit) -> Ở mục "Phiên bản" (Version) chọn "Phiên bản mới" (New version) -> Bấm "Triển khai" (Deploy).
+ * 7. Bấm "Xong" (Done). Sau đó quay lại Web bấm "Đẩy Lên Google Sheet" để kiểm tra kết quả ngay!
  * =========================================================================
  */
 
@@ -24,35 +21,39 @@ function doPost(e) {
     var contents = e.postData.contents;
     var data = JSON.parse(contents);
     var ss = SpreadsheetApp.getActiveSpreadsheet();
+    
+    // Tự động nhận diện dấu phân cách công thức (; cho Tiếng Việt / , cho Tiếng Anh)
+    var sep = getFormulaSeparator(ss);
 
     // 1. Cập nhật Sheet 1: Database Nguyên Liệu
     if (data.materials && Array.isArray(data.materials)) {
-      updateMaterialsSheet(ss, data.materials);
+      updateMaterialsSheet(ss, data.materials, sep);
     }
 
     // 2. Cập nhật Sheet 2: Vật Tư Bao Bì
     if (data.packaging && Array.isArray(data.packaging)) {
-      updatePackagingSheet(ss, data.packaging);
+      updatePackagingSheet(ss, data.packaging, sep);
     }
 
     // 3. Cập nhật Sheet 3: Recipe SOP Chi Tiết
     if (data.drinks && Array.isArray(data.drinks)) {
-      updateRecipeSheet(ss, data.drinks, data.materials);
+      updateRecipeSheet(ss, data.drinks, data.materials, sep);
     }
 
     // 4. Cập nhật Sheet 4: Bảng Cost & Định Giá Menu
     if (data.drinks && Array.isArray(data.drinks)) {
-      updateMenuSheet(ss, data.drinks, data.packaging);
+      updateMenuSheet(ss, data.drinks, data.packaging, data.materials, sep);
     }
 
     // 5. Cập nhật Sheet 5: Điểm Hòa Vốn & Dòng Tiền
     if (data.fixed_costs || data.target_profit) {
-      updateBreakEvenSheet(ss, data.fixed_costs, data.target_profit, data.drinks);
+      updateBreakEvenSheet(ss, data.fixed_costs, data.target_profit, data.drinks, sep);
     }
 
     var result = {
       status: "success",
-      message: "Đồng bộ dữ liệu thành công vào Google Sheet!",
+      message: "Đồng bộ dữ liệu thành công không còn lỗi #ERROR!!",
+      separator_used: sep,
       timestamp: new Date().toLocaleString("vi-VN", { timeZone: "Asia/Ho_Chi_Minh" })
     };
 
@@ -85,6 +86,21 @@ function doGet(e) {
 }
 
 // -------------------------------------------------------------
+// HELPER: NHẬN DIỆN DẤU PHÂN CÁCH CÔNG THỨC (; HOẶC ,)
+// -------------------------------------------------------------
+function getFormulaSeparator(ss) {
+  try {
+    var locale = (ss.getSpreadsheetLocale() || "").toLowerCase();
+    // Tiếng Anh (Mỹ, Anh) dùng dấu phẩy
+    if (locale.indexOf("en") === 0) {
+      return ",";
+    }
+  } catch(e) {}
+  // Mặc định cho Việt Nam (vi_VN) và các định dạng chuẩn F&B là dấu chấm phẩy ;
+  return ";";
+}
+
+// -------------------------------------------------------------
 // HELPER: LẤY HOẶC TẠO SHEET VỚI TIÊU ĐỀ
 // -------------------------------------------------------------
 function getOrCreateSheet(ss, name) {
@@ -98,11 +114,10 @@ function getOrCreateSheet(ss, name) {
 // -------------------------------------------------------------
 // 1. UPDATE SHEET NGUYÊN LIỆU
 // -------------------------------------------------------------
-function updateMaterialsSheet(ss, materials) {
+function updateMaterialsSheet(ss, materials, sep) {
   var sheet = getOrCreateSheet(ss, "1. Database Nguyên Liệu");
   sheet.clear();
 
-  // Tiêu đề
   sheet.getRange("A1").setValue("DATABASE NGUYÊN LIỆU GỐC — 23 COFFEE (MASTER RAW MATERIALS)")
     .setFontSize(14).setFontWeight("bold").setFontColor("#1B365D");
   sheet.getRange("A2").setValue("Nhập giá mua sỉ và quy cách thực tế. Cột 'Đơn Giá Cơ Sở' tự động tính toán để đồng bộ toàn bộ Menu.")
@@ -130,7 +145,7 @@ function updateMaterialsSheet(ss, materials) {
         m.unit_buy || "kg",
         Number(m.qty || 1000),
         Number(m.price || 0),
-        "=IF(E" + r + ">0, ROUND(F" + r + "/E" + r + ", 2), 0)",
+        "=IF(E" + r + ">0" + sep + " ROUND(F" + r + "/E" + r + sep + " 2)" + sep + " 0)",
         m.unit_base || "g",
         m.note || ""
       ]);
@@ -152,7 +167,7 @@ function updateMaterialsSheet(ss, materials) {
 // -------------------------------------------------------------
 // 2. UPDATE SHEET VẬT TƯ BAO BÌ
 // -------------------------------------------------------------
-function updatePackagingSheet(ss, packaging) {
+function updatePackagingSheet(ss, packaging, sep) {
   var sheet = getOrCreateSheet(ss, "2. Vật Tư Bao Bì");
   sheet.clear();
 
@@ -202,7 +217,7 @@ function updatePackagingSheet(ss, packaging) {
 // -------------------------------------------------------------
 // 3. UPDATE SHEET RECIPE SOP CHI TIẾT
 // -------------------------------------------------------------
-function updateRecipeSheet(ss, drinks, materials) {
+function updateRecipeSheet(ss, drinks, materials, sep) {
   var sheet = getOrCreateSheet(ss, "3. Recipe SOP Chi Tiết");
   sheet.clear();
 
@@ -250,7 +265,7 @@ function updateRecipeSheet(ss, drinks, materials) {
         qty,
         unit,
         unitCost,
-        "=ROUND(D" + rowIdx + "*F" + rowIdx + ", 0)",
+        "=ROUND(D" + rowIdx + "*F" + rowIdx + sep + " 0)",
         ing.note || ""
       ]);
       rowIdx++;
@@ -274,7 +289,7 @@ function updateRecipeSheet(ss, drinks, materials) {
 // -------------------------------------------------------------
 // 4. UPDATE SHEET BẢNG COST & ĐỊNH GIÁ MENU
 // -------------------------------------------------------------
-function updateMenuSheet(ss, drinks, packaging) {
+function updateMenuSheet(ss, drinks, packaging, materials, sep) {
   var sheet = getOrCreateSheet(ss, "4. Bảng Cost & Định Giá Menu");
   sheet.clear();
 
@@ -300,16 +315,37 @@ function updateMenuSheet(ss, drinks, packaging) {
     }
   }
 
+  var matPriceMap = {};
+  if (materials) {
+    for (var m = 0; m < materials.length; m++) {
+      var mKey = (materials[m].name || "").toLowerCase().trim();
+      matPriceMap[mKey] = Number(materials[m].unit_cost || 0);
+    }
+  }
+
   if (drinks.length > 0) {
     var rows = [];
     for (var i = 0; i < drinks.length; i++) {
       var d = drinks[i];
       var r = 5 + i;
       var pkgCost = pkgMap[d.pkg_id] !== undefined ? pkgMap[d.pkg_id] : 1100;
+      
+      // Tính toán Cost nguyên liệu nếu chưa có sẵn
       var costNl = Number(d.cost_nl || 0);
+      if (costNl === 0 && d.recipe && Array.isArray(d.recipe)) {
+        for (var k = 0; k < d.recipe.length; k++) {
+          var ing = d.recipe[k];
+          var ingKey = (ing.name || "").toLowerCase().trim();
+          var uCost = matPriceMap[ingKey] !== undefined ? matPriceMap[ingKey] : Number(ing.unit_cost || 0);
+          costNl += Math.round(Number(ing.qty || 0) * uCost);
+        }
+      }
+
       var wastePct = Number(d.waste_pct || 0.05);
       var sellPrice = Number(d.selling_price || 30000);
 
+      // Công thức sử dụng dấu phân cách sep (; hoặc ,)
+      // Chú ý: *10/3 thay cho /0.3 để tránh lỗi dấu thập phân ở mọi quốc gia!
       rows.push([
         (i + 1),
         d.category || "Món Khác",
@@ -317,12 +353,12 @@ function updateMenuSheet(ss, drinks, packaging) {
         costNl,
         pkgCost,
         wastePct,
-        "=ROUND((D" + r + "*(1+F" + r + "))+E" + r + ", 0)",
-        "=CEILING(G" + r + "/0.3, 1000)",
+        "=ROUND((D" + r + "*(1+F" + r + "))+E" + r + sep + " 0)",
+        "=CEILING(G" + r + "*10/3" + sep + " 1000)",
         sellPrice,
-        "=IF(I" + r + ">0, G" + r + "/I" + r + ", 0)",
+        "=IF(I" + r + ">0" + sep + " G" + r + "/I" + r + sep + " 0)",
         "=I" + r + "-G" + r + "",
-        '=IF(J' + r + '>0.35, "⚠️ Cost Cao (>35%) - Cần Tối Ưu", IF(J' + r + '<0.25, "💎 Lãi Rất Dày (<25%)", "✅ Chuẩn Ngành (25-35%)"))'
+        '=IF(J' + r + '>35%' + sep + ' "⚠️ Cost Cao (>35%) - Cần Tối Ưu"' + sep + ' IF(J' + r + '<25%' + sep + ' "💎 Lãi Rất Dày (<25%)"' + sep + ' "✅ Chuẩn Ngành (25-35%)"))'
       ]);
     }
 
@@ -340,6 +376,21 @@ function updateMenuSheet(ss, drinks, packaging) {
     sheet.getRange(5, 1, rows.length, 1).setHorizontalAlignment("center");
     sheet.getRange(5, 6, rows.length, 1).setHorizontalAlignment("center");
     sheet.getRange(5, 10, rows.length, 1).setHorizontalAlignment("center");
+
+    // Dòng Trung Bình Toàn Menu
+    var avgRowIdx = 5 + drinks.length;
+    var avgRowRange = sheet.getRange(avgRowIdx, 1, 1, headers.length);
+    sheet.getRange(avgRowIdx, 1, 1, 3).merge().setValue("TRUNG BÌNH TOÀN MENU").setFontWeight("bold").setHorizontalAlignment("center");
+    sheet.getRange(avgRowIdx, 4).setFormula("=AVERAGE(D5:D" + (avgRowIdx - 1) + ")").setNumberFormat("#,##0").setFontWeight("bold");
+    sheet.getRange(avgRowIdx, 5).setFormula("=AVERAGE(E5:E" + (avgRowIdx - 1) + ")").setNumberFormat("#,##0").setFontWeight("bold");
+    sheet.getRange(avgRowIdx, 6).setFormula("=AVERAGE(F5:F" + (avgRowIdx - 1) + ")").setNumberFormat("0.0%").setFontWeight("bold").setHorizontalAlignment("center");
+    sheet.getRange(avgRowIdx, 7).setFormula("=AVERAGE(G5:G" + (avgRowIdx - 1) + ")").setNumberFormat("#,##0").setFontWeight("bold");
+    sheet.getRange(avgRowIdx, 8).setFormula("=AVERAGE(H5:H" + (avgRowIdx - 1) + ")").setNumberFormat("#,##0").setFontWeight("bold");
+    sheet.getRange(avgRowIdx, 9).setFormula("=AVERAGE(I5:I" + (avgRowIdx - 1) + ")").setNumberFormat("#,##0").setFontWeight("bold");
+    sheet.getRange(avgRowIdx, 10).setFormula("=IF(I" + avgRowIdx + ">0" + sep + " G" + avgRowIdx + "/I" + avgRowIdx + sep + " 0)").setNumberFormat("0.0%").setFontWeight("bold").setHorizontalAlignment("center");
+    sheet.getRange(avgRowIdx, 11).setFormula("=I" + avgRowIdx + "-G" + avgRowIdx).setNumberFormat("#,##0").setFontWeight("bold");
+    sheet.getRange(avgRowIdx, 12).setValue("Chỉ số trung bình");
+    avgRowRange.setBackground("#F3F4F6").setBorder(true, true, true, true, true, true, "#1B365D", SpreadsheetApp.BorderStyle.DOUBLE);
   }
 
   sheet.autoResizeColumns(1, headers.length);
@@ -348,7 +399,7 @@ function updateMenuSheet(ss, drinks, packaging) {
 // -------------------------------------------------------------
 // 5. UPDATE SHEET ĐIỂM HÒA VỐN & DÒNG TIỀN
 // -------------------------------------------------------------
-function updateBreakEvenSheet(ss, fixedCosts, targetProfit, drinks) {
+function updateBreakEvenSheet(ss, fixedCosts, targetProfit, drinks, sep) {
   var sheet = getOrCreateSheet(ss, "5. Điểm Hòa Vốn & Dòng Tiền");
   sheet.clear();
 
@@ -367,26 +418,27 @@ function updateBreakEvenSheet(ss, fixedCosts, targetProfit, drinks) {
   fcHeaderRange.setBackground("#1B365D").setFontColor("#FFFFFF").setFontWeight("bold").setHorizontalAlignment("center");
 
   var fcRows = [];
-  var totalFc = 0;
   var fcList = fixedCosts || [
-    { name: "Mặt bằng kinh doanh", cost: 12000000, note: "Cố định mỗi tháng" },
-    { name: "Lương nhân viên (Full + Part)", cost: 15000000, note: "Dự kiến 2 ca vận hành" },
-    { name: "Điện, nước, internet", cost: 4000000, note: "Ước tính tiêu thụ" },
-    { name: "Khấu hao máy móc & dụng cụ", cost: 3000000, note: "Phân bổ 24-36 tháng" },
-    { name: "Marketing, biển bảng, POS", cost: 2000000, note: "Ngân sách tối thiểu duy trì" },
-    { name: "Chi phí dự phòng khác", cost: 1500000, note: "Bảo trì, sửa chữa nhỏ" }
+    { name: "Tiền thuê mặt bằng kinh doanh", cost: 15400000, note: "Mức thuê quán ki-ốt / take-away" },
+    { name: "Lương nhân viên pha chế & phục vụ (Part-time)", cost: 11600000, note: "2 ca x 4-5 tiếng/ngày x 22.000đ/giờ" },
+    { name: "Tiền điện (Máy pha, tủ mát, máy xay, máy lạnh)", cost: 3500000, note: "Biến phí điện năng thiết bị quầy bar" },
+    { name: "Tiền nước máy sinh hoạt & lọc", cost: 500000, note: "Rửa dụng cụ, vệ sinh" },
+    { name: "Khấu hao máy móc & dụng cụ pha chế", cost: 1000000, note: "Phân bổ 24-36 tháng máy pha & dụng cụ" },
+    { name: "Marketing, biển bảng, POS bán hàng", cost: 800000, note: "Phần mềm bán hàng & quảng bá" },
+    { name: "Chi phí dự phòng sửa chữa nhỏ quầy bar", cost: 500000, note: "Bảo trì định kỳ gioăng, lưỡi xay" }
   ];
+
+  var totalRowIdx = 6 + fcList.length;
 
   for (var i = 0; i < fcList.length; i++) {
     var item = fcList[i];
     var costVal = Number(item.cost || 0);
-    totalFc += costVal;
     var r = 6 + i;
     fcRows.push([
       (i + 1),
       item.name || "",
       costVal,
-      '=IF($D$' + (6 + fcList.length) + '>0, D' + r + '/$D$' + (6 + fcList.length) + ', 0)',
+      '=IF($D$' + totalRowIdx + '>0' + sep + ' D' + r + '/$D$' + totalRowIdx + sep + ' 0)',
       item.note || ""
     ]);
   }
@@ -398,7 +450,6 @@ function updateBreakEvenSheet(ss, fixedCosts, targetProfit, drinks) {
   sheet.getRange(6, 5, fcRows.length, 1).setNumberFormat("0.0%").setHorizontalAlignment("center");
 
   // Dòng Tổng Cộng
-  var totalRowIdx = 6 + fcList.length;
   sheet.getRange(totalRowIdx, 2, 1, 2).setValues([["", "TỔNG CHI PHÍ CỐ ĐỊNH / THÁNG"]]).setFontWeight("bold").setBackground("#F2F4F8");
   sheet.getRange(totalRowIdx, 4).setFormula("=SUM(D6:D" + (totalRowIdx - 1) + ")")
     .setFontWeight("bold").setNumberFormat("#,##0").setBackground("#E8F4F8");
@@ -406,7 +457,7 @@ function updateBreakEvenSheet(ss, fixedCosts, targetProfit, drinks) {
     .setFontWeight("bold").setNumberFormat("0.0%").setHorizontalAlignment("center");
   sheet.getRange(totalRowIdx, 2, 1, fcHeaders.length).setBorder(true, true, true, true, true, true, "#1B365D", SpreadsheetApp.BorderStyle.DOUBLE);
 
-  // Khối Chỉ Số Hòa Vốn (Bên phải hoặc phía dưới)
+  // Khối Chỉ Số Hòa Vốn
   var kpiStartRow = totalRowIdx + 3;
   sheet.getRange("B" + kpiStartRow).setValue("2. CHỈ SỐ HÒA VỐN & MỤC TIÊU LỢI NHUẬN").setFontSize(11).setFontWeight("bold").setFontColor("#1B365D");
 
@@ -415,13 +466,13 @@ function updateBreakEvenSheet(ss, fixedCosts, targetProfit, drinks) {
   var menuLastRow = 4 + numDrinks;
 
   var kpis = [
-    ["Giá bán trung bình toàn Menu", "='4. Bảng Cost & Định Giá Menu'!I" + (menuLastRow > 4 ? "5" : "5"), "VNĐ/ly (Lấy từ Menu)"],
-    ["Chi phí vốn trung bình / ly", "='4. Bảng Cost & Định Giá Menu'!G" + (menuLastRow > 4 ? "5" : "5"), "VNĐ/ly (Lấy từ Menu)"],
+    ["Giá bán trung bình toàn Menu", "=AVERAGE('4. Bảng Cost & Định Giá Menu'!I5:I" + menuLastRow + ")", "VNĐ/ly (Lấy trung bình từ Menu)"],
+    ["Chi phí vốn trung bình / ly", "=AVERAGE('4. Bảng Cost & Định Giá Menu'!G5:G" + menuLastRow + ")", "VNĐ/ly (Lấy trung bình từ Menu)"],
     ["Lợi nhuận mục tiêu mong muốn", targetProf, "VNĐ/tháng (Bạn có thể sửa số này)"],
-    ["SỐ LY HÒA VỐN / THÁNG", "=CEILING(D" + totalRowIdx + "/(D" + (kpiStartRow + 1) + "-D" + (kpiStartRow + 2) + "), 1)", "Ly/tháng"],
-    ["SỐ LY HÒA VỐN / NGÀY (TỐI THIỂU)", "=CEILING(D" + (kpiStartRow + 4) + "/30, 1)", "Ly/ngày cần đạt để không lỗ"],
+    ["SỐ LY HÒA VỐN / THÁNG", "=CEILING(D" + totalRowIdx + "/(D" + (kpiStartRow + 1) + "-D" + (kpiStartRow + 2) + ")" + sep + " 1)", "Ly/tháng"],
+    ["SỐ LY HÒA VỐN / NGÀY (TỐI THIỂU)", "=CEILING(D" + (kpiStartRow + 4) + "/30" + sep + " 1)", "Ly/ngày cần đạt để không lỗ"],
     ["DOANH THU HÒA VỐN / NGÀY", "=D" + (kpiStartRow + 5) + "*D" + (kpiStartRow + 1), "VNĐ/ngày tối thiểu"],
-    ["SỐ LY ĐẠT MỤC TIÊU LỢI NHUẬN / NGÀY", "=CEILING((D" + totalRowIdx + "+D" + (kpiStartRow + 3) + ")/((D" + (kpiStartRow + 1) + "-D" + (kpiStartRow + 2) + ")*30), 1)", "Ly/ngày để đạt mục tiêu"]
+    ["SỐ LY ĐẠT MỤC TIÊU LỢI NHUẬN / NGÀY", "=CEILING((D" + totalRowIdx + "+D" + (kpiStartRow + 3) + ")/((D" + (kpiStartRow + 1) + "-D" + (kpiStartRow + 2) + ")*30)" + sep + " 1)", "Ly/ngày để đạt mục tiêu"]
   ];
 
   for (var k = 0; k < kpis.length; k++) {

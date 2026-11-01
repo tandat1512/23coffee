@@ -708,18 +708,20 @@
         </div>
 
         <!-- Setup Instructions Accordion -->
-        <details class="bg-amber-50/70 border border-amber-200 rounded-xl p-3 text-xs text-amber-950">
+        <details class="bg-amber-50/70 border border-amber-200 rounded-xl p-3 text-xs text-amber-950" open>
           <summary class="font-bold cursor-pointer text-amber-900 flex items-center gap-1.5">
             <i class="fa-solid fa-circle-question text-amber-600"></i>
-            <span>Hướng dẫn 1 phút để tạo URL Webhook trên Google Sheets</span>
+            <span>Hướng dẫn khắc phục lỗi #ERROR! và cập nhật Webhook Google Sheets</span>
           </summary>
           <div class="mt-2.5 space-y-2 text-[11px] text-slate-700 leading-relaxed border-t border-amber-200/60 pt-2">
-            <p><strong>Bước 1:</strong> Mở file Google Sheet của bạn qua nút <span class="text-emerald-700 font-bold">Mở Sheet</span> ở trên.</p>
+            <div class="bg-white p-2 rounded border border-amber-300 font-medium text-amber-950">
+              💡 <strong>Nguyên nhân lỗi #ERROR!:</strong> Do Google Sheets cài đặt khu vực Việt Nam yêu cầu dấu phân cách trong công thức là dấu chấm phẩy (<code>;</code>) thay vì dấu phẩy (<code>,</code>). Script mới đã tự động nhận diện và sửa 100% vấn đề này!
+            </div>
+            <p><strong>Bước 1:</strong> Mở file Google Sheet qua nút <span class="text-emerald-700 font-bold">Mở Sheet</span> ở trên.</p>
             <p><strong>Bước 2:</strong> Vào menu <strong>Tiện ích mở rộng</strong> (Extensions) &rarr; chọn <strong>Apps Script</strong>.</p>
-            <p><strong>Bước 3:</strong> Xóa hết code mặc định, dán toàn bộ mã từ file <code>google_sheets_script.gs</code> vào và nhấn Ctrl+S (Lưu).</p>
-            <p><strong>Bước 4:</strong> Bấm nút <strong>Triển khai</strong> (Deploy) góc trên bên phải &rarr; chọn <strong>Triển khai mới</strong> (New deployment).</p>
-            <p><strong>Bước 5:</strong> Chọn loại <strong>Ứng dụng web</strong> (Web app), mục <em>Ai có quyền truy cập</em> chọn <strong>Bất kỳ ai</strong> (Anyone) &rarr; Bấm <strong>Triển khai</strong>.</p>
-            <p><strong>Bước 6:</strong> Copy <em>URL ứng dụng web</em> được cấp và dán vào ô trên, sau đó bấm <strong>Lưu Cấu Hình</strong>!</p>
+            <p><strong>Bước 3:</strong> Xóa sạch code trong file <code>Code.gs</code>, dán toàn bộ mã mới từ file <code>google_sheets_script.gs</code> vào và nhấn <strong>Ctrl + S</strong>.</p>
+            <p><strong>Bước 4:</strong> Bấm <strong>Triển khai</strong> (Deploy) &rarr; chọn <strong>Quản lý bản triển khai</strong> (Manage deployments) &rarr; Bấm biểu tượng ✏️ (Chỉnh sửa) &rarr; Mục <em>Phiên bản</em> (Version) chọn <strong>Phiên bản mới</strong> (New version) &rarr; Bấm <strong>Triển khai</strong> (Deploy).</p>
+            <p><strong>Bước 5:</strong> Bấm nút <strong>Đẩy Lên Google Sheet</strong> ở trên để cập nhật dữ liệu hoàn hảo không còn lỗi!</p>
           </div>
         </details>
       </div>

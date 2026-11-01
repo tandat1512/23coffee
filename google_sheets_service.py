@@ -2,7 +2,15 @@ import os
 import json
 import threading
 import datetime
-import requests
+import urllib.request
+import urllib.error
+import urllib.parse
+
+try:
+    import requests
+    HAS_REQUESTS = True
+except ImportError:
+    HAS_REQUESTS = False
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 CONFIG_FILE = os.path.join(BASE_DIR, "google_config.json")
@@ -20,7 +28,6 @@ def load_google_config():
         "is_configured": False
     }
     
-    # Environment variable has priority
     env_webhook = os.environ.get("GOOGLE_SHEET_WEBHOOK", "").strip()
     
     if os.path.exists(CONFIG_FILE):
@@ -51,6 +58,7 @@ def save_google_config(config_data):
 def push_to_google_sheets(data):
     """
     Synchronously push data payload to Google Sheet via Google Apps Script Webhook.
+    Uses requests if available, or native urllib.request.
     """
     config = load_google_config()
     webhook_url = config.get("webhook_url", "").strip()
@@ -58,19 +66,54 @@ def push_to_google_sheets(data):
     if not webhook_url:
         return {
             "success": False, 
-            "error": "Chưa cấu hình URL Webhook Google Sheets. Vui lòng bấm Cấu hình Google Sheets để nhập URL."
+            "error": "Chưa cấu hình URL Webhook Google Sheets. Vui lòng bấm Google Sheets trên thanh menu để dán URL."
         }
         
+    now_str = datetime.datetime.now().strftime("%H:%M:%S %d/%m/%Y")
+    payload_bytes = json.dumps(data, ensure_ascii=False).encode("utf-8")
+
+    # Method 1: requests library
+    if HAS_REQUESTS:
+        try:
+            headers = {"Content-Type": "application/json; charset=utf-8"}
+            response = requests.post(webhook_url, data=payload_bytes, headers=headers, timeout=25, allow_redirects=True)
+            if response.status_code == 200:
+                try:
+                    res_json = response.json()
+                    if res_json.get("status") == "success":
+                        save_google_config({
+                            "last_synced": now_str,
+                            "last_status": "Thành công (" + now_str + ")"
+                        })
+                        return {
+                            "success": True,
+                            "message": "Đã đồng bộ thành công vào Google Sheet!",
+                            "timestamp": now_str,
+                            "google_response": res_json
+                        }
+                    else:
+                        err_msg = res_json.get("message", "Lỗi từ Apps Script")
+                        save_google_config({"last_status": f"Lỗi: {err_msg}"})
+                        return {"success": False, "error": err_msg}
+                except Exception:
+                    save_google_config({"last_synced": now_str, "last_status": "Thành công (" + now_str + ")"})
+                    return {"success": True, "message": "Đã gửi dữ liệu sang Google Sheets!", "timestamp": now_str}
+        except Exception as e:
+            print(f"Requests post error, trying urllib fallback: {e}")
+
+    # Method 2: Standard library urllib.request
     try:
-        headers = {"Content-Type": "application/json"}
-        # Google Apps Script redirects with 302, requests follows automatically
-        response = requests.post(webhook_url, json=data, headers=headers, timeout=25, allow_redirects=True)
+        req = urllib.request.Request(
+            webhook_url,
+            data=payload_bytes,
+            headers={"Content-Type": "application/json; charset=utf-8"},
+            method="POST"
+        )
         
-        now_str = datetime.datetime.now().strftime("%H:%M:%S %d/%m/%Y")
-        
-        if response.status_code == 200:
+        with urllib.request.urlopen(req, timeout=25) as resp:
+            resp_data = resp.read().decode("utf-8")
             try:
-                res_json = response.json()
+                res_json = json.loads(resp_data)
                 if res_json.get("status") == "success":
                     save_google_config({
                         "last_synced": now_str,
@@ -87,26 +130,14 @@ def push_to_google_sheets(data):
                     save_google_config({"last_status": f"Lỗi: {err_msg}"})
                     return {"success": False, "error": err_msg}
             except Exception:
-                # Text response fallback
-                save_google_config({
-                    "last_synced": now_str,
-                    "last_status": "Thành công (" + now_str + ")"
-                })
-                return {
-                    "success": True,
-                    "message": "Đã gửi dữ liệu sang Google Sheets!",
-                    "timestamp": now_str
-                }
-        else:
-            err_msg = f"HTTP {response.status_code}: {response.text[:200]}"
-            save_google_config({"last_status": f"Lỗi HTTP: {err_msg}"})
-            return {"success": False, "error": err_msg}
-            
-    except requests.exceptions.Timeout:
-        save_google_config({"last_status": "Hết thời gian chờ kết nối (Timeout)"})
-        return {"success": False, "error": "Kết nối tới Google quá thời gian chờ (Timeout). Vui lòng thử lại."}
+                save_google_config({"last_synced": now_str, "last_status": "Thành công (" + now_str + ")"})
+                return {"success": True, "message": "Đã gửi dữ liệu sang Google Sheets!", "timestamp": now_str}
+                
+    except urllib.error.URLError as e:
+        save_google_config({"last_status": f"Lỗi kết nối: {e.reason}"})
+        return {"success": False, "error": f"Không thể kết nối đến Google Sheets: {e.reason}"}
     except Exception as e:
-        save_google_config({"last_status": f"Lỗi kết nối: {str(e)}"})
+        save_google_config({"last_status": f"Lỗi: {str(e)}"})
         return {"success": False, "error": str(e)}
 
 def pull_from_google_sheets():
@@ -120,15 +151,14 @@ def pull_from_google_sheets():
         return {"success": False, "error": "Chưa cấu hình URL Webhook Google Sheets."}
         
     try:
-        response = requests.get(webhook_url, timeout=25, allow_redirects=True)
-        if response.status_code == 200:
-            res_json = response.json()
+        req = urllib.request.Request(webhook_url, method="GET")
+        with urllib.request.urlopen(req, timeout=25) as resp:
+            resp_data = resp.read().decode("utf-8")
+            res_json = json.loads(resp_data)
             if res_json.get("status") == "success":
                 return {"success": True, "data": res_json.get("data", {})}
             else:
                 return {"success": False, "error": res_json.get("message", "Lỗi không xác định")}
-        else:
-            return {"success": False, "error": f"HTTP {response.status_code}"}
     except Exception as e:
         return {"success": False, "error": str(e)}
 
