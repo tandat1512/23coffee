@@ -1,18 +1,21 @@
 /**
  * =========================================================================
- * 23 COFFEE — GOOGLE APPS SCRIPT WEBHOOK ĐỒNG BỘ HAI CHIỀU DỮ LIỆU COST
+ * 23 COFFEE — GOOGLE APPS SCRIPT ĐỒNG BỘ CÔNG THỨC CHUẨN 100% VỚI EXCEL
  * =========================================================================
- * CẬP NHẬT: TỰ ĐỘNG TƯƠNG THÍCH CẢ GOOGLE SHEETS VIỆT NAM (DẤU ;) VÀ QUỐC TẾ (DẤU ,)
- * KHẮC PHỤC 100% LỖI #ERROR! TẠI CÁC CỘT CÔNG THỨC TRÊN GOOGLE SHEETS!
+ * ĐỒNG BỘ HÓA HOÀN TOÀN GIỮA FILE EXCEL (.XLSX) VÀ GOOGLE SHEETS
+ * - Sử dụng cùng hệ thống công thức liên kết động giữa 5 Sheet
+ * - Tự động nhận diện dấu chấm phẩy (;) cho Google Sheets Việt Nam
+ * - Sử dụng hàm ROUNDUP đồng nhất thay cho CEILING (loại bỏ 100% lỗi cú pháp)
+ * - Tự động liên kết Sheet 1 -> Sheet 3 -> Sheet 4 -> Sheet 5
  * =========================================================================
- * Hướng dẫn cập nhật trên Google Sheet (Chỉ mất 30 giây):
- * 1. Mở file Google Sheet của bạn: https://docs.google.com/spreadsheets/d/1uGRxJEPZljoVKlbBXRatjPiIpk2NBnXldwWSfVYVy_Y/edit
- * 2. Trên menu trên cùng, chọn: "Tiện ích mở rộng" (Extensions) -> "Apps Script".
- * 3. Xóa hết code cũ trong file Code.gs và DÁN TOÀN BỘ file này vào.
+ * HƯỚNG DẪN CẬP NHẬT TRÊN GOOGLE SHEETS (30 GIÂY):
+ * 1. Mở file Google Sheets: https://docs.google.com/spreadsheets/d/1uGRxJEPZljoVKlbBXRatjPiIpk2NBnXldwWSfVYVy_Y/edit
+ * 2. Chọn menu "Tiện ích mở rộng" (Extensions) -> "Apps Script".
+ * 3. Xóa toàn bộ code cũ trong file Code.gs, DÁN TOÀN BỘ file này vào.
  * 4. Nhấn biểu tượng Đĩa mềm (Save / Lưu) hoặc Ctrl+S.
- * 5. Bấm nút "Triển khai" (Deploy) màu xanh ở góc phải trên -> Chọn "Quản lý bản triển khai" (Manage deployments).
- * 6. Bấm biểu tượng cây bút chì (Edit) -> Ở mục "Phiên bản" (Version) chọn "Phiên bản mới" (New version) -> Bấm "Triển khai" (Deploy).
- * 7. Bấm "Xong" (Done). Sau đó quay lại Web bấm "Đẩy Lên Google Sheet" để kiểm tra kết quả ngay!
+ * 5. Bấm nút xanh "Triển khai" (Deploy) góc trên bên phải -> "Quản lý bản triển khai" (Manage deployments).
+ * 6. Bấm biểu tượng cây bút chì (Chỉnh sửa) -> Ở mục "Phiên bản" chọn "Phiên bản mới" -> Bấm "Triển khai".
+ * 7. Bấm "Xong". Sau đó quay lại Web bấm "Đẩy Lên Google Sheet" để trải nghiệm kết quả mượt mà!
  * =========================================================================
  */
 
@@ -26,33 +29,37 @@ function doPost(e) {
     var sep = getFormulaSeparator(ss);
 
     // 1. Cập nhật Sheet 1: Database Nguyên Liệu
+    var matNameToRow = {};
     if (data.materials && Array.isArray(data.materials)) {
-      updateMaterialsSheet(ss, data.materials, sep);
+      matNameToRow = updateMaterialsSheet(ss, data.materials, sep);
     }
 
     // 2. Cập nhật Sheet 2: Vật Tư Bao Bì
+    var pkgCodeToRow = {};
     if (data.packaging && Array.isArray(data.packaging)) {
-      updatePackagingSheet(ss, data.packaging, sep);
+      pkgCodeToRow = updatePackagingSheet(ss, data.packaging, sep);
     }
 
-    // 3. Cập nhật Sheet 3: Recipe SOP Chi Tiết
+    // 3. Cập nhật Sheet 3: Recipe SOP Chi Tiết (Có dòng Tổng Cost từng món)
+    var drinkRecipeRanges = {};
     if (data.drinks && Array.isArray(data.drinks)) {
-      updateRecipeSheet(ss, data.drinks, data.materials, sep);
+      drinkRecipeRanges = updateRecipeSheet(ss, data.drinks, data.materials, sep, matNameToRow);
     }
 
-    // 4. Cập nhật Sheet 4: Bảng Cost & Định Giá Menu
+    // 4. Cập nhật Sheet 4: Bảng Cost & Định Giá Menu (Liên kết động Sheet 2 & Sheet 3)
+    var avgRow = 5;
     if (data.drinks && Array.isArray(data.drinks)) {
-      updateMenuSheet(ss, data.drinks, data.packaging, data.materials, sep);
+      avgRow = updateMenuSheet(ss, data.drinks, data.packaging, data.materials, sep, drinkRecipeRanges, pkgCodeToRow);
     }
 
-    // 5. Cập nhật Sheet 5: Điểm Hòa Vốn & Dòng Tiền
+    // 5. Cập nhật Sheet 5: Điểm Hòa Vốn & Dòng Tiền (Liên kết động Sheet 4)
     if (data.fixed_costs || data.target_profit) {
-      updateBreakEvenSheet(ss, data.fixed_costs, data.target_profit, data.drinks, sep);
+      updateBreakEvenSheet(ss, data.fixed_costs, data.target_profit, data.drinks, sep, avgRow);
     }
 
     var result = {
       status: "success",
-      message: "Đồng bộ dữ liệu thành công không còn lỗi #ERROR!!",
+      message: "Đồng bộ dữ liệu thành công! Toàn bộ 5 sheet đã khớp 100% với file Excel!",
       separator_used: sep,
       timestamp: new Date().toLocaleString("vi-VN", { timeZone: "Asia/Ho_Chi_Minh" })
     };
@@ -96,13 +103,10 @@ function getFormulaSeparator(ss) {
       return ",";
     }
   } catch(e) {}
-  // Mặc định cho Việt Nam (vi_VN) và các định dạng chuẩn F&B là dấu chấm phẩy ;
+  // Mặc định cho Việt Nam (vi_VN) và các định dạng chuẩn là dấu chấm phẩy ;
   return ";";
 }
 
-// -------------------------------------------------------------
-// HELPER: LẤY HOẶC TẠO SHEET VỚI TIÊU ĐỀ
-// -------------------------------------------------------------
 function getOrCreateSheet(ss, name) {
   var sheet = ss.getSheetByName(name);
   if (!sheet) {
@@ -112,7 +116,7 @@ function getOrCreateSheet(ss, name) {
 }
 
 // -------------------------------------------------------------
-// 1. UPDATE SHEET NGUYÊN LIỆU
+// 1. UPDATE SHEET 1: DATABASE NGUYÊN LIỆU
 // -------------------------------------------------------------
 function updateMaterialsSheet(ss, materials, sep) {
   var sheet = getOrCreateSheet(ss, "1. Database Nguyên Liệu");
@@ -133,14 +137,19 @@ function updateMaterialsSheet(ss, materials, sep) {
   headerRange.setValues([headers]);
   headerRange.setBackground("#1B365D").setFontColor("#FFFFFF").setFontWeight("bold").setHorizontalAlignment("center");
 
+  var matNameToRow = {};
+
   if (materials.length > 0) {
     var rows = [];
     for (var i = 0; i < materials.length; i++) {
       var m = materials[i];
       var r = 5 + i;
+      var mName = (m.name || "").trim();
+      matNameToRow[mName.toLowerCase()] = r;
+
       rows.push([
         m.id || ("NL" + (i < 9 ? "0" : "") + (i + 1)),
-        m.name || "",
+        mName,
         m.pack || "Gói 1kg",
         m.unit_buy || "kg",
         Number(m.qty || 1000),
@@ -162,10 +171,11 @@ function updateMaterialsSheet(ss, materials, sep) {
   }
 
   sheet.autoResizeColumns(1, headers.length);
+  return matNameToRow;
 }
 
 // -------------------------------------------------------------
-// 2. UPDATE SHEET VẬT TƯ BAO BÌ
+// 2. UPDATE SHEET 2: VẬT TƯ BAO BÌ
 // -------------------------------------------------------------
 function updatePackagingSheet(ss, packaging, sep) {
   var sheet = getOrCreateSheet(ss, "2. Vật Tư Bao Bì");
@@ -185,13 +195,18 @@ function updatePackagingSheet(ss, packaging, sep) {
   headerRange.setValues([headers]);
   headerRange.setBackground("#1B365D").setFontColor("#FFFFFF").setFontWeight("bold").setHorizontalAlignment("center");
 
+  var pkgCodeToRow = {};
+
   if (packaging.length > 0) {
     var rows = [];
     for (var i = 0; i < packaging.length; i++) {
       var p = packaging[i];
       var r = 5 + i;
+      var code = p.id || ("BB" + (i < 9 ? "0" : "") + (i + 1));
+      pkgCodeToRow[code] = r;
+
       rows.push([
-        p.id || ("BB" + (i < 9 ? "0" : "") + (i + 1)),
+        code,
         p.name || "",
         Number(p.cup || 0),
         Number(p.lid || 0),
@@ -212,12 +227,13 @@ function updatePackagingSheet(ss, packaging, sep) {
   }
 
   sheet.autoResizeColumns(1, headers.length);
+  return pkgCodeToRow;
 }
 
 // -------------------------------------------------------------
-// 3. UPDATE SHEET RECIPE SOP CHI TIẾT
+// 3. UPDATE SHEET 3: RECIPE SOP CHI TIẾT (CHUẨN 100% EXCEL)
 // -------------------------------------------------------------
-function updateRecipeSheet(ss, drinks, materials, sep) {
+function updateRecipeSheet(ss, drinks, materials, sep, matNameToRow) {
   var sheet = getOrCreateSheet(ss, "3. Recipe SOP Chi Tiết");
   sheet.clear();
 
@@ -235,61 +251,77 @@ function updateRecipeSheet(ss, drinks, materials, sep) {
   headerRange.setValues([headers]);
   headerRange.setBackground("#335C67").setFontColor("#FFFFFF").setFontWeight("bold").setHorizontalAlignment("center");
 
-  var matPriceMap = {};
-  var matUnitMap = {};
-  if (materials) {
-    for (var m = 0; m < materials.length; m++) {
-      var key = (materials[m].name || "").toLowerCase().trim();
-      matPriceMap[key] = Number(materials[m].unit_cost || 0);
-      matUnitMap[key] = materials[m].unit_base || "g";
-    }
-  }
+  var drinkRecipeRanges = {};
+  var currentR = 5;
 
-  var rows = [];
-  var rowIdx = 5;
   for (var i = 0; i < drinks.length; i++) {
     var d = drinks[i];
     var recipe = d.recipe || [];
+    if (recipe.length === 0) {
+      recipe = [{ name: "Cà phê", qty: 18, unit: "g" }];
+    }
+    var startR = currentR;
+
+    var drinkRows = [];
     for (var j = 0; j < recipe.length; j++) {
       var ing = recipe[j];
-      var ingName = ing.name || "";
-      var key = ingName.toLowerCase().trim();
-      var unitCost = matPriceMap[key] !== undefined ? matPriceMap[key] : Number(ing.unit_cost || 0);
-      var unit = ing.unit || matUnitMap[key] || "g";
+      var ingName = (ing.name || "").trim();
+      var key = ingName.toLowerCase();
+      var matRow = matNameToRow ? matNameToRow[key] : null;
+      var refFormula = matRow ? "='1. Database Nguyên Liệu'!G" + matRow : Number(ing.unit_cost || 0);
       var qty = Number(ing.qty || 0);
 
-      rows.push([
+      drinkRows.push([
         (j === 0 ? (i + 1) : ""),
         (j === 0 ? d.name : ""),
         ingName,
         qty,
-        unit,
-        unitCost,
-        "=ROUND(D" + rowIdx + "*F" + rowIdx + sep + " 0)",
+        ing.unit || "g",
+        refFormula,
+        "=ROUND(D" + currentR + "*F" + currentR + sep + " 0)",
         ing.note || ""
       ]);
-      rowIdx++;
+      currentR++;
     }
-  }
 
-  if (rows.length > 0) {
-    var dataRange = sheet.getRange(5, 1, rows.length, headers.length);
-    dataRange.setValues(rows);
+    var dataRange = sheet.getRange(startR, 1, drinkRows.length, headers.length);
+    dataRange.setValues(drinkRows);
     dataRange.setBorder(true, true, true, true, true, true, "#D9D9D9", SpreadsheetApp.BorderStyle.SOLID);
-    sheet.getRange(5, 4, rows.length, 1).setNumberFormat("#,##0.##");
-    sheet.getRange(5, 6, rows.length, 2).setNumberFormat("#,##0");
-    sheet.getRange(5, 7, rows.length, 1).setFontWeight("bold");
-    sheet.getRange(5, 1, rows.length, 1).setHorizontalAlignment("center");
-    sheet.getRange(5, 5, rows.length, 1).setHorizontalAlignment("center");
+    sheet.getRange(startR, 4, drinkRows.length, 1).setNumberFormat("#,##0.##");
+    sheet.getRange(startR, 6, drinkRows.length, 2).setNumberFormat("#,##0");
+    sheet.getRange(startR, 7, drinkRows.length, 1).setFontWeight("bold");
+    sheet.getRange(startR, 1, drinkRows.length, 1).setHorizontalAlignment("center");
+    sheet.getRange(startR, 5, drinkRows.length, 1).setHorizontalAlignment("center");
+
+    // Dòng TỔNG COST NGUYÊN LIỆU cho món này (Y hệt file Excel)
+    var endR = currentR - 1;
+    var subTotRange = sheet.getRange(currentR, 1, 1, headers.length);
+    subTotRange.setValues([[
+      "",
+      "TỔNG COST NGUYÊN LIỆU — " + d.name,
+      "",
+      "",
+      "",
+      "",
+      "=SUM(G" + startR + ":G" + endR + ")",
+      ""
+    ]]);
+    subTotRange.setFontWeight("bold").setBackground("#E8F4F8");
+    sheet.getRange(currentR, 7).setNumberFormat("#,##0");
+    subTotRange.setBorder(true, true, true, true, true, true, "#1B365D", SpreadsheetApp.BorderStyle.DOUBLE);
+
+    drinkRecipeRanges[(d.name || "").toLowerCase().trim()] = currentR;
+    currentR += 2; // Cách 1 dòng trống giữa các món
   }
 
   sheet.autoResizeColumns(1, headers.length);
+  return drinkRecipeRanges;
 }
 
 // -------------------------------------------------------------
-// 4. UPDATE SHEET BẢNG COST & ĐỊNH GIÁ MENU
+// 4. UPDATE SHEET 4: BẢNG COST & ĐỊNH GIÁ MENU (CHUẨN 100% EXCEL)
 // -------------------------------------------------------------
-function updateMenuSheet(ss, drinks, packaging, materials, sep) {
+function updateMenuSheet(ss, drinks, packaging, materials, sep, drinkRecipeRanges, pkgCodeToRow) {
   var sheet = getOrCreateSheet(ss, "4. Bảng Cost & Định Giá Menu");
   sheet.clear();
 
@@ -301,60 +333,39 @@ function updateMenuSheet(ss, drinks, packaging, materials, sep) {
   var headers = [
     "STT", "Nhóm Món", "Tên Thức Uống", "Cost Nguyên Liệu (VNĐ)", "Cost Bao Bì (VNĐ)", 
     "% Hao Hụt", "TỔNG COST THỰC TẾ (VNĐ)", "GIÁ GỢI Ý (30% COST)", "GIÁ BẠN CHỌN BÁN (VNĐ)", 
-    "% FOOD COST", "LÃI GỘP / LY (VNĐ)", "ĐÁNH GIÁ CHIẾN LƯỢC"
+    "% FOOD COST THỰC TẾ", "LÃI GỘP / LY (VNĐ)", "CẢNH BÁO TÀI CHÍNH"
   ];
 
   var headerRange = sheet.getRange(4, 1, 1, headers.length);
   headerRange.setValues([headers]);
   headerRange.setBackground("#1B365D").setFontColor("#FFFFFF").setFontWeight("bold").setHorizontalAlignment("center");
 
-  var pkgMap = {};
-  if (packaging) {
-    for (var p = 0; p < packaging.length; p++) {
-      pkgMap[packaging[p].id] = Number(packaging[p].total || 1100);
-    }
-  }
-
-  var matPriceMap = {};
-  if (materials) {
-    for (var m = 0; m < materials.length; m++) {
-      var mKey = (materials[m].name || "").toLowerCase().trim();
-      matPriceMap[mKey] = Number(materials[m].unit_cost || 0);
-    }
-  }
-
   if (drinks.length > 0) {
     var rows = [];
     for (var i = 0; i < drinks.length; i++) {
       var d = drinks[i];
       var r = 5 + i;
-      var pkgCost = pkgMap[d.pkg_id] !== undefined ? pkgMap[d.pkg_id] : 1100;
+      var dNameKey = (d.name || "").toLowerCase().trim();
       
-      // Tính toán Cost nguyên liệu nếu chưa có sẵn
-      var costNl = Number(d.cost_nl || 0);
-      if (costNl === 0 && d.recipe && Array.isArray(d.recipe)) {
-        for (var k = 0; k < d.recipe.length; k++) {
-          var ing = d.recipe[k];
-          var ingKey = (ing.name || "").toLowerCase().trim();
-          var uCost = matPriceMap[ingKey] !== undefined ? matPriceMap[ingKey] : Number(ing.unit_cost || 0);
-          costNl += Math.round(Number(ing.qty || 0) * uCost);
-        }
-      }
+      // Liên kết động sang Sheet 3 (SOP) và Sheet 2 (Bao Bì) y hệt file Excel!
+      var recipeTotRow = (drinkRecipeRanges && drinkRecipeRanges[dNameKey]) ? drinkRecipeRanges[dNameKey] : (5 + i);
+      var pkgRow = (pkgCodeToRow && pkgCodeToRow[d.pkg_id]) ? pkgCodeToRow[d.pkg_id] : 5;
 
+      var formulaNl = "='3. Recipe SOP Chi Tiết'!G" + recipeTotRow;
+      var formulaBb = "='2. Vật Tư Bao Bì'!H" + pkgRow;
       var wastePct = Number(d.waste_pct || 0.05);
       var sellPrice = Number(d.selling_price || 30000);
 
-      // Công thức sử dụng dấu phân cách sep (; hoặc ,)
-      // Chú ý: *10/3 thay cho /0.3 để tránh lỗi dấu thập phân ở mọi quốc gia!
+      // Công thức ROUNDUP((G*10/3); -3) làm tròn lên nghìn đồng - 100% chuẩn cả Excel lẫn Google Sheets!
       rows.push([
         (i + 1),
         d.category || "Món Khác",
         d.name || "",
-        costNl,
-        pkgCost,
+        formulaNl,
+        formulaBb,
         wastePct,
-        "=ROUND((D" + r + "*(1+F" + r + "))+E" + r + sep + " 0)",
-        "=CEILING(G" + r + "*10/3" + sep + " 1000)",
+        "=ROUND(D" + r + "*(1+F" + r + ")+E" + r + sep + " 0)",
+        "=ROUNDUP(G" + r + "*10/3" + sep + " -3)",
         sellPrice,
         "=IF(I" + r + ">0" + sep + " G" + r + "/I" + r + sep + " 0)",
         "=I" + r + "-G" + r + "",
@@ -370,36 +381,37 @@ function updateMenuSheet(ss, drinks, packaging, materials, sep) {
     sheet.getRange(5, 4, rows.length, 2).setNumberFormat("#,##0");
     sheet.getRange(5, 6, rows.length, 1).setNumberFormat("0.0%");
     sheet.getRange(5, 7, rows.length, 2).setNumberFormat("#,##0").setFontWeight("bold").setBackground("#E8F4F8");
-    sheet.getRange(5, 9, rows.length, 1).setNumberFormat("#,##0").setFontWeight("bold").setBackground("#E2F0D9"); // Soft Green input
+    sheet.getRange(5, 9, rows.length, 1).setNumberFormat("#,##0").setFontWeight("bold").setBackground("#E2F0D9"); // Input
     sheet.getRange(5, 10, rows.length, 1).setNumberFormat("0.0%").setFontWeight("bold");
     sheet.getRange(5, 11, rows.length, 1).setNumberFormat("#,##0").setFontWeight("bold");
     sheet.getRange(5, 1, rows.length, 1).setHorizontalAlignment("center");
     sheet.getRange(5, 6, rows.length, 1).setHorizontalAlignment("center");
     sheet.getRange(5, 10, rows.length, 1).setHorizontalAlignment("center");
 
-    // Dòng Trung Bình Toàn Menu
-    var avgRowIdx = 5 + drinks.length;
-    var avgRowRange = sheet.getRange(avgRowIdx, 1, 1, headers.length);
-    sheet.getRange(avgRowIdx, 1, 1, 3).merge().setValue("TRUNG BÌNH TOÀN MENU").setFontWeight("bold").setHorizontalAlignment("center");
-    sheet.getRange(avgRowIdx, 4).setFormula("=AVERAGE(D5:D" + (avgRowIdx - 1) + ")").setNumberFormat("#,##0").setFontWeight("bold");
-    sheet.getRange(avgRowIdx, 5).setFormula("=AVERAGE(E5:E" + (avgRowIdx - 1) + ")").setNumberFormat("#,##0").setFontWeight("bold");
-    sheet.getRange(avgRowIdx, 6).setFormula("=AVERAGE(F5:F" + (avgRowIdx - 1) + ")").setNumberFormat("0.0%").setFontWeight("bold").setHorizontalAlignment("center");
-    sheet.getRange(avgRowIdx, 7).setFormula("=AVERAGE(G5:G" + (avgRowIdx - 1) + ")").setNumberFormat("#,##0").setFontWeight("bold");
-    sheet.getRange(avgRowIdx, 8).setFormula("=AVERAGE(H5:H" + (avgRowIdx - 1) + ")").setNumberFormat("#,##0").setFontWeight("bold");
-    sheet.getRange(avgRowIdx, 9).setFormula("=AVERAGE(I5:I" + (avgRowIdx - 1) + ")").setNumberFormat("#,##0").setFontWeight("bold");
-    sheet.getRange(avgRowIdx, 10).setFormula("=IF(I" + avgRowIdx + ">0" + sep + " G" + avgRowIdx + "/I" + avgRowIdx + sep + " 0)").setNumberFormat("0.0%").setFontWeight("bold").setHorizontalAlignment("center");
-    sheet.getRange(avgRowIdx, 11).setFormula("=I" + avgRowIdx + "-G" + avgRowIdx).setNumberFormat("#,##0").setFontWeight("bold");
-    sheet.getRange(avgRowIdx, 12).setValue("Chỉ số trung bình");
+    // Dòng TRUNG BÌNH TOÀN BỘ MENU (Khớp 100% Excel)
+    var avgRow = 5 + drinks.length;
+    var avgRowRange = sheet.getRange(avgRow, 1, 1, headers.length);
+    sheet.getRange(avgRow, 1, 1, 3).merge().setValue("TRUNG BÌNH TOÀN BỘ MENU (" + drinks.length + " MÓN)").setFontWeight("bold").setHorizontalAlignment("center");
+    sheet.getRange(avgRow, 4).setFormula("=AVERAGE(D5:D" + (avgRow - 1) + ")").setNumberFormat("#,##0").setFontWeight("bold");
+    sheet.getRange(avgRow, 5).setFormula("=AVERAGE(E5:E" + (avgRow - 1) + ")").setNumberFormat("#,##0").setFontWeight("bold");
+    sheet.getRange(avgRow, 6).setFormula("=AVERAGE(F5:F" + (avgRow - 1) + ")").setNumberFormat("0.0%").setFontWeight("bold").setHorizontalAlignment("center");
+    sheet.getRange(avgRow, 7).setFormula("=AVERAGE(G5:G" + (avgRow - 1) + ")").setNumberFormat("#,##0").setFontWeight("bold");
+    sheet.getRange(avgRow, 8).setFormula("=AVERAGE(H5:H" + (avgRow - 1) + ")").setNumberFormat("#,##0").setFontWeight("bold");
+    sheet.getRange(avgRow, 9).setFormula("=AVERAGE(I5:I" + (avgRow - 1) + ")").setNumberFormat("#,##0").setFontWeight("bold");
+    sheet.getRange(avgRow, 10).setFormula("=AVERAGE(J5:J" + (avgRow - 1) + ")").setNumberFormat("0.0%").setFontWeight("bold").setHorizontalAlignment("center");
+    sheet.getRange(avgRow, 11).setFormula("=AVERAGE(K5:K" + (avgRow - 1) + ")").setNumberFormat("#,##0").setFontWeight("bold");
+    sheet.getRange(avgRow, 12).setValue("Chỉ số trung bình");
     avgRowRange.setBackground("#F3F4F6").setBorder(true, true, true, true, true, true, "#1B365D", SpreadsheetApp.BorderStyle.DOUBLE);
   }
 
   sheet.autoResizeColumns(1, headers.length);
+  return (5 + drinks.length);
 }
 
 // -------------------------------------------------------------
-// 5. UPDATE SHEET ĐIỂM HÒA VỐN & DÒNG TIỀN
+// 5. UPDATE SHEET 5: ĐIỂM HÒA VỐN & DÒNG TIỀN (CHUẨN 100% EXCEL)
 // -------------------------------------------------------------
-function updateBreakEvenSheet(ss, fixedCosts, targetProfit, drinks, sep) {
+function updateBreakEvenSheet(ss, fixedCosts, targetProfit, drinks, sep, avgRow) {
   var sheet = getOrCreateSheet(ss, "5. Điểm Hòa Vốn & Dòng Tiền");
   sheet.clear();
 
@@ -408,7 +420,7 @@ function updateBreakEvenSheet(ss, fixedCosts, targetProfit, drinks, sep) {
   sheet.getRange("A2").setValue("Tính toán chuẩn xác: Mỗi ngày quán phải bán tối thiểu bao nhiêu ly để không lỗ và đạt lợi nhuận kỳ vọng.")
     .setFontSize(10).setFontStyle("italic").setFontColor("#555555");
 
-  // Bảng Chi Phí Cố Định
+  // 1. DỰ TOÁN CHI PHÍ CỐ ĐỊNH HÀNG THÁNG
   sheet.getRange("B4").setValue("1. DỰ TOÁN CHI PHÍ CỐ ĐỊNH HÀNG THÁNG (FIXED OPERATING COSTS)")
     .setFontSize(11).setFontWeight("bold").setFontColor("#1B365D");
 
@@ -417,7 +429,6 @@ function updateBreakEvenSheet(ss, fixedCosts, targetProfit, drinks, sep) {
   fcHeaderRange.setValues([fcHeaders]);
   fcHeaderRange.setBackground("#1B365D").setFontColor("#FFFFFF").setFontWeight("bold").setHorizontalAlignment("center");
 
-  var fcRows = [];
   var fcList = fixedCosts || [
     { name: "Tiền thuê mặt bằng kinh doanh", cost: 15400000, note: "Mức thuê quán ki-ốt / take-away" },
     { name: "Lương nhân viên pha chế & phục vụ (Part-time)", cost: 11600000, note: "2 ca x 4-5 tiếng/ngày x 22.000đ/giờ" },
@@ -428,7 +439,8 @@ function updateBreakEvenSheet(ss, fixedCosts, targetProfit, drinks, sep) {
     { name: "Chi phí dự phòng sửa chữa nhỏ quầy bar", cost: 500000, note: "Bảo trì định kỳ gioăng, lưỡi xay" }
   ];
 
-  var totalRowIdx = 6 + fcList.length;
+  var sumFixedR = 6 + fcList.length;
+  var fcRows = [];
 
   for (var i = 0; i < fcList.length; i++) {
     var item = fcList[i];
@@ -438,7 +450,7 @@ function updateBreakEvenSheet(ss, fixedCosts, targetProfit, drinks, sep) {
       (i + 1),
       item.name || "",
       costVal,
-      '=IF($D$' + totalRowIdx + '>0' + sep + ' D' + r + '/$D$' + totalRowIdx + sep + ' 0)',
+      '=IF($D$' + sumFixedR + '>0' + sep + ' D' + r + '/$D$' + sumFixedR + sep + ' 0)',
       item.note || ""
     ]);
   }
@@ -449,47 +461,69 @@ function updateBreakEvenSheet(ss, fixedCosts, targetProfit, drinks, sep) {
   sheet.getRange(6, 4, fcRows.length, 1).setNumberFormat("#,##0");
   sheet.getRange(6, 5, fcRows.length, 1).setNumberFormat("0.0%").setHorizontalAlignment("center");
 
-  // Dòng Tổng Cộng
-  sheet.getRange(totalRowIdx, 2, 1, 2).setValues([["", "TỔNG CHI PHÍ CỐ ĐỊNH / THÁNG"]]).setFontWeight("bold").setBackground("#F2F4F8");
-  sheet.getRange(totalRowIdx, 4).setFormula("=SUM(D6:D" + (totalRowIdx - 1) + ")")
+  // Dòng Tổng Cộng Chi Phí Cố Định
+  sheet.getRange(sumFixedR, 2, 1, 2).setValues([["", "TỔNG CHI PHÍ CỐ ĐỊNH / THÁNG"]]).setFontWeight("bold").setBackground("#F2F4F8");
+  sheet.getRange(sumFixedR, 4).setFormula("=SUM(D6:D" + (sumFixedR - 1) + ")")
     .setFontWeight("bold").setNumberFormat("#,##0").setBackground("#E8F4F8");
-  sheet.getRange(totalRowIdx, 5).setFormula("=SUM(E6:E" + (totalRowIdx - 1) + ")")
+  sheet.getRange(sumFixedR, 5).setFormula("=SUM(E6:E" + (sumFixedR - 1) + ")")
     .setFontWeight("bold").setNumberFormat("0.0%").setHorizontalAlignment("center");
-  sheet.getRange(totalRowIdx, 2, 1, fcHeaders.length).setBorder(true, true, true, true, true, true, "#1B365D", SpreadsheetApp.BorderStyle.DOUBLE);
+  sheet.getRange(sumFixedR, 2, 1, fcHeaders.length).setBorder(true, true, true, true, true, true, "#1B365D", SpreadsheetApp.BorderStyle.DOUBLE);
 
-  // Khối Chỉ Số Hòa Vốn
-  var kpiStartRow = totalRowIdx + 3;
-  sheet.getRange("B" + kpiStartRow).setValue("2. CHỈ SỐ HÒA VỐN & MỤC TIÊU LỢI NHUẬN").setFontSize(11).setFontWeight("bold").setFontColor("#1B365D");
+  // 2. CÔNG THỨC TÍNH ĐIỂM HÒA VỐN THỰC CHIẾN (Khớp 100% Excel)
+  var beStartR = sumFixedR + 2;
+  sheet.getRange("B" + beStartR).setValue("2. CÔNG THỨC TÍNH ĐIỂM HÒA VỐN THỰC CHIẾN (BREAK-EVEN POINT)")
+    .setFontSize(11).setFontWeight("bold").setFontColor("#1B365D");
+
+  var beHdrR = beStartR + 1;
+  var headers5_2 = ["Chỉ Số Tài Chính", "Giá Trị Tính Toán", "Đơn Vị", "Giải Thích Ý Nghĩa & Ứng Dụng", "Hành Động Của Chủ Quán"];
+  var beHdrRange = sheet.getRange(beHdrR, 2, 1, headers5_2.length);
+  beHdrRange.setValues([headers5_2]);
+  beHdrRange.setBackground("#1B365D").setFontColor("#FFFFFF").setFontWeight("bold").setHorizontalAlignment("center");
+
+  var r_aov = beHdrR + 1;
+  var r_cm = beHdrR + 2;
+  var r_bemonth = beHdrR + 3;
+  var r_beday = beHdrR + 4;
+  var r_revday = beHdrR + 5;
+  var r_revmonth = beHdrR + 6;
+  var r_target = beHdrR + 7;
+  var r_targetday = beHdrR + 8;
 
   var targetProf = Number(targetProfit || 15000000);
-  var numDrinks = drinks ? drinks.length : 1;
-  var menuLastRow = 4 + numDrinks;
 
-  var kpis = [
-    ["Giá bán trung bình toàn Menu", "=AVERAGE('4. Bảng Cost & Định Giá Menu'!I5:I" + menuLastRow + ")", "VNĐ/ly (Lấy trung bình từ Menu)"],
-    ["Chi phí vốn trung bình / ly", "=AVERAGE('4. Bảng Cost & Định Giá Menu'!G5:G" + menuLastRow + ")", "VNĐ/ly (Lấy trung bình từ Menu)"],
-    ["Lợi nhuận mục tiêu mong muốn", targetProf, "VNĐ/tháng (Bạn có thể sửa số này)"],
-    ["SỐ LY HÒA VỐN / THÁNG", "=CEILING(D" + totalRowIdx + "/(D" + (kpiStartRow + 1) + "-D" + (kpiStartRow + 2) + ")" + sep + " 1)", "Ly/tháng"],
-    ["SỐ LY HÒA VỐN / NGÀY (TỐI THIỂU)", "=CEILING(D" + (kpiStartRow + 4) + "/30" + sep + " 1)", "Ly/ngày cần đạt để không lỗ"],
-    ["DOANH THU HÒA VỐN / NGÀY", "=D" + (kpiStartRow + 5) + "*D" + (kpiStartRow + 1), "VNĐ/ngày tối thiểu"],
-    ["SỐ LY ĐẠT MỤC TIÊU LỢI NHUẬN / NGÀY", "=CEILING((D" + totalRowIdx + "+D" + (kpiStartRow + 3) + ")/((D" + (kpiStartRow + 1) + "-D" + (kpiStartRow + 2) + ")*30)" + sep + " 1)", "Ly/ngày để đạt mục tiêu"]
+  var beItems = [
+    [r_aov, "Giá bán trung bình 1 ly (AOV)", "='4. Bảng Cost & Định Giá Menu'!I" + avgRow, "VNĐ/ly", "Giá trung bình khách chi tiêu tại quán"],
+    [r_cm, "Lãi gộp trung bình trên 1 ly (CM)", "='4. Bảng Cost & Định Giá Menu'!K" + avgRow, "VNĐ/ly", "Số tiền lời trên mỗi ly để bù tiền mặt bằng & nhân sự"],
+    [r_bemonth, "Số ly hòa vốn / tháng (Break-even Monthly)", "=ROUNDUP(D" + sumFixedR + "/C" + r_cm + sep + " 0)", "Ly/tháng", "Tổng số ly phải bán trong tháng để đạt điểm 0 đồng lãi/lỗ"],
+    [r_beday, "SỐ LY HÒA VỐN / NGÀY (Break-even Daily)", "=ROUNDUP(C" + r_bemonth + "/30" + sep + " 0)", "Ly/ngày", "MỤC TIÊU BẮT BUỘC: Mỗi ngày mở mắt ra phải bán đủ số này!"],
+    [r_revday, "Doanh thu hòa vốn / ngày", "=C" + r_beday + "*C" + r_aov, "VNĐ/ngày", "Doanh thu tối thiểu cần quẹt máy mỗi ngày"],
+    [r_revmonth, "Doanh thu hòa vốn / tháng", "=C" + r_bemonth + "*C" + r_aov, "VNĐ/tháng", "Mức doanh thu chạm ngưỡng an toàn"],
+    [r_target, "Mục tiêu Lợi Nhuận Ròng kỳ vọng", targetProf, "VNĐ/tháng", "Tiền chủ quán muốn bỏ túi mang về sau khi trừ hết chi phí"],
+    [r_targetday, "SỐ LY CẦN BÁN ĐỂ ĐẠT LÃI KỲ VỌNG / NGÀY", "=ROUNDUP((D" + sumFixedR + "+C" + r_target + ")/(C" + r_cm + "*30)" + sep + " 0)", "Ly/ngày", "Mục tiêu kinh doanh thực tế để quán phát triển bền vững"]
   ];
 
-  for (var k = 0; k < kpis.length; k++) {
-    var curR = kpiStartRow + 1 + k;
-    sheet.getRange("C" + curR).setValue(kpis[k][0]).setFontWeight(k >= 3 ? "bold" : "normal");
-    var valCell = sheet.getRange("D" + curR);
-    if (typeof kpis[k][1] === "string" && kpis[k][1].indexOf("=") === 0) {
-      valCell.setFormula(kpis[k][1]);
+  for (var k = 0; k < beItems.length; k++) {
+    var item = beItems[k];
+    var curR = item[0];
+    var metric = item[1];
+    var val = item[2];
+    var unit = item[3];
+    var expl = item[4];
+
+    sheet.getRange("B" + curR).setValue(metric).setFontWeight(curR === r_beday || curR === r_targetday ? "bold" : "normal");
+    var valCell = sheet.getRange("C" + curR);
+    if (typeof val === "string" && val.indexOf("=") === 0) {
+      valCell.setFormula(val);
     } else {
-      valCell.setValue(kpis[k][1]);
+      valCell.setValue(val);
     }
     valCell.setFontWeight("bold").setNumberFormat("#,##0");
-    if (k === 4 || k === 6) {
+    if (curR === r_beday || curR === r_targetday) {
       valCell.setBackground("#FEF3C7").setFontColor("#92400E"); // Amber highlight
     }
-    sheet.getRange("E" + curR).setValue(kpis[k][2]).setFontStyle("italic").setFontColor("#666666");
-    sheet.getRange(curR, 3, 1, 3).setBorder(true, true, true, true, true, true, "#D9D9D9", SpreadsheetApp.BorderStyle.SOLID);
+    sheet.getRange("D" + curR).setValue(unit).setHorizontalAlignment("center");
+    sheet.getRange("E" + curR).setValue(expl).setFontStyle("italic").setFontColor("#666666");
+    sheet.getRange(curR, 2, 1, 4).setBorder(true, true, true, true, true, true, "#D9D9D9", SpreadsheetApp.BorderStyle.SOLID);
   }
 
   sheet.autoResizeColumns(1, 8);

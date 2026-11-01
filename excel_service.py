@@ -276,7 +276,7 @@ def generate_excel_from_data(data, output_filename="Bang_Cost_Va_Chien_Luoc_Dinh
         c_tot.fill = highlight_fill
         c_tot.number_format = "#,##0"
 
-        c_sug = ws4.cell(row=idx, column=8, value=f"=CEILING(G{idx}/0.3, 1000)")
+        c_sug = ws4.cell(row=idx, column=8, value=f"=ROUNDUP(G{idx}*10/3, -3)")
         c_sug.alignment = align_right
         c_sug.number_format = "#,##0"
 
@@ -286,7 +286,7 @@ def generate_excel_from_data(data, output_filename="Bang_Cost_Va_Chien_Luoc_Dinh
         c_price.fill = user_input_fill
         c_price.number_format = "#,##0"
 
-        c_fc = ws4.cell(row=idx, column=10, value=f"=G{idx}/I{idx}")
+        c_fc = ws4.cell(row=idx, column=10, value=f"=IF(I{idx}>0, G{idx}/I{idx}, 0)")
         c_fc.alignment = align_right
         c_fc.font = bold_font
         c_fc.number_format = "0.0%"
@@ -296,7 +296,7 @@ def generate_excel_from_data(data, output_filename="Bang_Cost_Va_Chien_Luoc_Dinh
         c_prof.font = bold_font
         c_prof.number_format = "#,##0"
 
-        c_warn = ws4.cell(row=idx, column=12, value=f'=IF(J{idx}>0.35, "⚠️ Cost Cao (>35%) - Cần Tối Ưu", IF(J{idx}<0.25, "💎 Lãi Rất Dày (<25%)", "✅ Chuẩn Ngành (25-35%)"))')
+        c_warn = ws4.cell(row=idx, column=12, value=f'=IF(J{idx}>35%, "⚠️ Cost Cao (>35%) - Cần Tối Ưu", IF(J{idx}<25%, "💎 Lãi Rất Dày (<25%)", "✅ Chuẩn Ngành (25-35%)"))')
         c_warn.alignment = align_left
 
         for c in range(1, 13):
@@ -353,7 +353,7 @@ def generate_excel_from_data(data, output_filename="Bang_Cost_Va_Chien_Luoc_Dinh
         c_c.alignment = align_right
         c_c.number_format = "#,##0"
 
-        c_pct = ws5.cell(row=idx, column=5, value=f"=D{idx}/$D${tot_fixed_rows+6}")
+        c_pct = ws5.cell(row=idx, column=5, value=f"=IF($D${tot_fixed_rows+6}>0, D{idx}/$D${tot_fixed_rows+6}, 0)")
         c_pct.alignment = align_right
         c_pct.number_format = "0.0%"
 
