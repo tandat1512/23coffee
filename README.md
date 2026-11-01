@@ -1,6 +1,6 @@
 # ☕ 23 COFFEE — Hệ Thống Quản Lý Cost & Tự Động Hóa Menu F&B
 
-Ứng dụng web nội bộ giúp chủ quán **23 COFFEE** tự động hóa toàn bộ quy trình tính cost, bóc tách công thức SOP, định giá bán theo chuẩn 30% Food Cost và đồng bộ trực tiếp vào file Excel chuẩn 5 Sheet.
+Ứng dụng web nội bộ giúp chủ quán **23 COFFEE** tự động hóa toàn bộ quy trình tính cost, bóc tách công thức SOP, định giá bán theo chuẩn 30% Food Cost, lưu trữ dữ liệu vĩnh viễn và **tự động đồng bộ hai chiều trực tiếp vào Google Sheets online**.
 
 ---
 
@@ -10,14 +10,34 @@ Hệ thống được khóa chặt bằng cơ chế **Session Authentication** (
 
 | STT | Vai Trò | Tên Đăng Nhập | Mật Khẩu Mặc Định | Ghi Chú |
 | :-: | :--- | :---: | :---: | :--- |
-| **1** | **Chủ Quán (Tấn Đạt)** | `tandat` | `tandat@23coffee` | Toàn quyền quản trị |
-| **2** | **Cổ Đông / Quản Lý** | `partner` | `partner@23coffee` | Toàn quyền quản trị |
+| **1** | **Quản Trị Viên (Admin)** | `admin` | `admin` | Toàn quyền quản trị |
+| **2** | **Chủ Quán (Tấn Đạt)** | `tandat` | `admin` | Toàn quyền quản trị |
 
 > 💡 **Đổi mật khẩu:** Sau khi đăng nhập, bạn có thể bấm vào biểu tượng 🔑 (chìa khóa) ở góc trên bên phải để đổi sang mật khẩu riêng bất kỳ lúc nào.
 
 ---
 
-## 🌟 2. Các Tính Năng Nổi Bật
+## 📊 2. Tự Động Lưu Dữ Liệu & Đồng Bộ Trực Tiếp Vào Google Sheets
+
+Hệ thống giải quyết triệt để bài toán **Lưu trữ dữ liệu vĩnh viễn trên Cloud** và **Tự động cập nhật trực tiếp vào Google Sheets**:
+* **Link Google Sheets Kết Nối:** [Bảng Cost & Chiến Lược Định Giá 23 Coffee](https://docs.google.com/spreadsheets/d/1uGRxJEPZljoVKlbBXRatjPiIpk2NBnXldwWSfVYVy_Y/edit?usp=sharing)
+* **Cơ chế lưu trữ:**
+  1. Khi bạn thêm món mới, sửa giá nguyên liệu hay đổi công thức trên Web, hệ thống tự động lưu vào **Cơ sở dữ liệu SQLite** và bộ nhớ đệm.
+  2. Ngay lập tức, một tiến trình chạy ngầm tự động đẩy toàn bộ dữ liệu sang **Google Sheets** chỉ sau 1-2 giây.
+  3. Bất cứ ai mở link Google Sheets ra đều thấy các bảng tính nhảy số và đổi màu theo thời gian thực (real-time).
+  4. Nếu bạn chỉnh sửa dữ liệu trên Google Sheets, trên web có nút **"Kéo Từ Google Về Web"** để cập nhật lại hệ thống ngay lập tức!
+
+### ⚡ Hướng dẫn kích hoạt Webhook trên Google Sheets (Chỉ làm 1 lần - mất 1 phút):
+1. Mở file Google Sheets: `https://docs.google.com/spreadsheets/d/1uGRxJEPZljoVKlbBXRatjPiIpk2NBnXldwWSfVYVy_Y/edit?usp=sharing`
+2. Vào menu **Tiện ích mở rộng** (*Extensions*) $\rightarrow$ chọn **Apps Script**.
+3. Dán toàn bộ nội dung trong tệp [`google_sheets_script.gs`](google_sheets_script.gs) vào và bấm biểu tượng Lưu (Ctrl+S).
+4. Bấm nút xanh **Triển khai** (*Deploy*) ở góc phải trên $\rightarrow$ chọn **Triển khai mới** (*New deployment*).
+5. Chọn loại **Ứng dụng web** (*Web app*), mục **Ai có quyền truy cập** chọn **Bất kỳ ai** (*Anyone*) $\rightarrow$ Bấm **Triển khai**.
+6. Sao chép **URL ứng dụng web** (Web App URL) và dán vào nút **Google Sheets** trên thanh điều hướng của Web App!
+
+---
+
+## 🌟 3. Các Tính Năng Nổi Bật
 
 1. **Quản Lý Món & Công Thức Barista (Recipe SOP):**
    * Thêm món mới, chọn nguyên liệu từ dropdown, nhập định lượng (g/ml).
@@ -38,17 +58,17 @@ Hệ thống được khóa chặt bằng cơ chế **Session Authentication** (
 
 ---
 
-## 💻 3. Hướng Dẫn Chạy Trên Máy Tính Cá Nhân (Local)
+## 💻 4. Hướng Dẫn Chạy Trên Máy Tính Cá Nhân (Local)
 
 1. Bấm đúp chuột vào tệp: **`Chay_App_Quan_Ly_Cost.bat`**.
 2. Trình duyệt sẽ tự động mở trang web tại địa chỉ: **`http://localhost:5000`**.
-3. Đăng nhập bằng tài khoản `tandat` hoặc `partner`.
+3. Đăng nhập bằng tài khoản `admin` / mật khẩu `admin`.
 
 ---
 
-## 🌐 4. Hướng Dẫn Đưa Lên Mạng Công Khai (Public Web Miễn Phí 100%)
+## 🌐 5. Hướng Dẫn Đưa Lên Mạng Công Khai (Public Web Miễn Phí 100%)
 
-Để bạn và cổ đông có thể truy cập bằng điện thoại từ bất cứ đâu:
+Để bạn và cổ đông có thể truy cập bằng điện thoại/iPad từ bất cứ đâu:
 
 ### Cách triển khai qua Render.com (Khuyên dùng - 2 phút):
 1. Đăng ký tài khoản miễn phí tại **[render.com](https://render.com)**.
@@ -61,23 +81,27 @@ Hệ thống được khóa chặt bằng cơ chế **Session Authentication** (
    * **Start Command:** `gunicorn app:app`
 5. Bấm **Create Web Service**.
 6. Sau 1-2 phút, bạn sẽ nhận được đường link web HTTPS miễn phí (ví dụ: `https://23coffee.onrender.com`).
-7. Mở link trên điện thoại và đăng nhập bằng tài khoản `tandat` hoặc `partner`!
+7. Mở link trên iPhone/iPad và đăng nhập bằng tài khoản `admin` hoặc `tandat` (mật khẩu `admin`)!
 
 ---
 
-## 📁 5. Cấu Trúc Thư Mục Dự Án
+## 📁 6. Cấu Trúc Thư Mục Dự Án
 
 ```
 23coffee/
 ├── app.py                      # Backend Flask & Xác thực phân quyền 2 người
+├── db_service.py               # Cơ sở dữ liệu SQLite lưu trữ dữ liệu vĩnh viễn
+├── google_sheets_service.py    # Dịch vụ tự động đồng bộ hai chiều Google Sheets
+├── google_sheets_script.gs     # Mã nguồn Google Apps Script Webhook
+├── google_config.json          # Cấu hình liên kết Google Sheets
 ├── excel_service.py            # Động cơ tự động sinh và căn chỉnh file Excel 5 sheet
-├── data_cost.json              # Cơ sở dữ liệu món, nguyên liệu, chi phí
-├── requirements.txt            # Danh sách thư viện Python (Flask, openpyxl, gunicorn...)
+├── data_cost.json              # Bộ nhớ đệm dữ liệu món, nguyên liệu, chi phí
+├── requirements.txt            # Danh sách thư viện Python (Flask, openpyxl, requests...)
 ├── Procfile                    # Cấu hình máy chủ web cho Render/Railway
 ├── render.yaml                 # Cấu hình 1-click deploy lên Render
 ├── Chay_App_Quan_Ly_Cost.bat   # Phím tắt chạy 1-click trên máy tính Windows
 ├── templates/
-│   ├── index.html              # Giao diện chính hệ thống quản trị
+│   ├── index.html              # Giao diện chính hệ thống quản trị (hỗ trợ iPhone/iPad)
 │   └── login.html              # Màn hình đăng nhập bảo mật
 └── README.md                   # Hướng dẫn chi tiết
 ```

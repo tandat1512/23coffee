@@ -5,6 +5,14 @@ import math
 from flask import Flask, render_template, request, jsonify, send_file, session, redirect, url_for
 from werkzeug.security import generate_password_hash, check_password_hash
 from excel_service import generate_excel_from_data
+from google_sheets_service import (
+    load_google_config, 
+    save_google_config, 
+    push_to_google_sheets, 
+    pull_from_google_sheets, 
+    trigger_async_sync
+)
+from db_service import save_snapshot_to_db, load_data_from_db, init_db
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DATA_FILE = os.path.join(BASE_DIR, "data_cost.json")
@@ -124,14 +132,30 @@ def change_password():
 # DATA SERVICES & CALCULATIONS
 # ----------------------------------------------------
 def load_data():
-    if not os.path.exists(DATA_FILE):
-        return {"materials": [], "packaging": [], "drinks": [], "fixed_costs": [], "target_profit": 15000000}
-    with open(DATA_FILE, "r", encoding="utf-8") as f:
-        return json.load(f)
+    if os.path.exists(DATA_FILE):
+        try:
+            with open(DATA_FILE, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except Exception as e:
+            print(f"Error loading {DATA_FILE}: {e}")
+            
+    # Fallback to SQLite DB
+    db_data = load_data_from_db()
+    if db_data:
+        return db_data
+        
+    return {"materials": [], "packaging": [], "drinks": [], "fixed_costs": [], "target_profit": 15000000}
 
 def save_data(data):
+    # 1. Save to JSON
     with open(DATA_FILE, "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, indent=2)
+        
+    # 2. Persist to SQLite Database
+    save_snapshot_to_db(data)
+    
+    # 3. Asynchronously push to Google Sheets (if configured)
+    trigger_async_sync(data)
 
 def calculate_metrics(data):
     materials_map = {m["name"].lower().strip(): m for m in data.get("materials", [])}
@@ -444,6 +468,59 @@ def download_excel():
         as_attachment=True,
         download_name="Bang_Cost_Va_Chien_Luoc_Dinh_Gia_23_Coffee.xlsx"
     )
+
+# ----------------------------------------------------
+# GOOGLE SHEETS SYNCHRONIZATION API
+# ----------------------------------------------------
+@app.route("/api/google_sync/config", methods=["GET", "POST"])
+def google_sync_config():
+    if request.method == "POST":
+        req = request.json or {}
+        new_config = {}
+        if "webhook_url" in req:
+            new_config["webhook_url"] = req["webhook_url"].strip()
+        if "auto_sync" in req:
+            new_config["auto_sync"] = bool(req["auto_sync"])
+        if "sheet_url" in req:
+            new_config["sheet_url"] = req["sheet_url"].strip()
+            
+        updated = save_google_config(new_config)
+        return jsonify({"success": True, "config": updated})
+        
+    config = load_google_config()
+    return jsonify({"success": True, "config": config})
+
+@app.route("/api/google_sync/push", methods=["POST"])
+def trigger_google_push():
+    data = load_data()
+    # Calculate detailed food costs & metrics before pushing
+    metrics = calculate_metrics(data)
+    
+    # Format payload with computed cost_nl for drinks
+    payload = {
+        "materials": data.get("materials", []),
+        "packaging": data.get("packaging", []),
+        "drinks": metrics.get("drinks", []),
+        "fixed_costs": data.get("fixed_costs", []),
+        "target_profit": data.get("target_profit", 15000000)
+    }
+    
+    res = push_to_google_sheets(payload)
+    return jsonify(res)
+
+@app.route("/api/google_sync/pull", methods=["POST"])
+def trigger_google_pull():
+    res = pull_from_google_sheets()
+    if res.get("success"):
+        sheet_data = res.get("data", {})
+        # If materials came from sheet, merge or update
+        if "materials" in sheet_data and sheet_data["materials"]:
+            data = load_data()
+            data["materials"] = sheet_data["materials"]
+            save_data(data)
+            sync_excel_file()
+            return jsonify({"success": True, "message": "Đã tải dữ liệu mới từ Google Sheet về hệ thống!"})
+    return jsonify(res)
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))

@@ -118,14 +118,22 @@
           </button>
         </div>
 
-        <div class="flex items-center gap-2">
-          <button onclick="syncExcel(true)" class="px-3 py-1.5 sm:px-3.5 sm:py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg text-xs sm:text-sm shadow flex items-center gap-1.5 whitespace-nowrap">
-            <i class="fa-solid fa-file-excel text-xs"></i>
-            <span class="hidden sm:inline">Đồng Bộ</span> Excel
+        <div class="flex items-center gap-1.5 sm:gap-2">
+          <button onclick="openGoogleSyncModal()" class="px-2.5 py-1.5 sm:px-3 sm:py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-lg text-xs sm:text-sm shadow flex items-center gap-1.5 whitespace-nowrap transition active:scale-95" title="Đồng bộ trực tiếp với Google Sheets">
+            <i class="fa-solid fa-table text-amber-300 text-xs"></i>
+            <span>Google Sheets</span>
+            <span id="gsheet-indicator" class="w-2 h-2 rounded-full bg-slate-300 inline-block"></span>
           </button>
-          <a href="/api/download_excel" class="px-2.5 py-1.5 sm:px-3 sm:py-2 bg-blue-600/80 hover:bg-blue-600 text-white rounded-lg text-xs sm:text-sm transition flex items-center gap-1" title="Tải file Excel">
-            <i class="fa-solid fa-download"></i>
-            <span class="hidden md:inline text-xs">Tải về</span>
+          <a href="https://docs.google.com/spreadsheets/d/1uGRxJEPZljoVKlbBXRatjPiIpk2NBnXldwWSfVYVy_Y/edit?usp=sharing" target="_blank" rel="noopener noreferrer" class="p-1.5 sm:px-2.5 sm:py-2 bg-white/10 hover:bg-white/20 text-slate-200 hover:text-white rounded-lg text-xs font-semibold transition flex items-center gap-1" title="Mở trực tiếp Google Sheet trên tab mới">
+            <i class="fa-solid fa-arrow-up-right-from-square text-xs"></i>
+            <span class="hidden lg:inline text-[11px]">Mở Docs</span>
+          </a>
+          <button onclick="syncExcel(true)" class="px-2.5 py-1.5 sm:px-3 sm:py-2 bg-slate-700 hover:bg-slate-600 text-slate-200 hover:text-white font-semibold rounded-lg text-xs sm:text-sm shadow flex items-center gap-1.5 whitespace-nowrap">
+            <i class="fa-solid fa-file-excel text-emerald-400 text-xs"></i>
+            <span class="hidden sm:inline">Xuất</span> Excel
+          </button>
+          <a href="/api/download_excel" class="p-1.5 sm:px-2.5 sm:py-2 bg-blue-600/80 hover:bg-blue-600 text-white rounded-lg text-xs sm:text-sm transition flex items-center gap-1" title="Tải file Excel về máy">
+            <i class="fa-solid fa-download text-xs"></i>
           </a>
         </div>
       </div>
@@ -632,6 +640,100 @@
     </div>
   </div>
 
+  <!-- MODAL: GOOGLE SHEETS SYNC -->
+  <div id="modal-google-sync" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-3 sm:p-4 hidden">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-lg w-full overflow-hidden animate-in fade-in zoom-in-95 duration-150 max-h-[92vh] flex flex-col">
+      <div class="bg-emerald-700 text-white px-4 py-3 flex items-center justify-between flex-shrink-0">
+        <h3 class="text-sm sm:text-base font-bold flex items-center gap-2">
+          <i class="fa-solid fa-table text-amber-300"></i>
+          <span>Tự Động Đồng Bộ Với Google Sheets</span>
+        </h3>
+        <button onclick="closeGoogleSyncModal()" class="text-emerald-200 hover:text-white text-lg">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <div class="p-4 overflow-y-auto space-y-4 touch-scroll flex-1">
+        <!-- Target Google Sheet Info Card -->
+        <div class="bg-emerald-50 border border-emerald-200 rounded-xl p-3 flex items-center justify-between gap-2">
+          <div class="min-w-0">
+            <div class="text-[11px] font-bold text-emerald-800 uppercase tracking-wider">File Google Sheets Kết Nối:</div>
+            <div class="text-xs font-semibold text-emerald-950 truncate max-w-xs sm:max-w-sm mt-0.5">Bảng Cost & Chiến Lược Định Giá 23 Coffee</div>
+            <div id="gsync-status-badge" class="text-[11px] text-emerald-700 font-medium mt-1 flex items-center gap-1.5">
+              <span class="w-2 h-2 rounded-full bg-emerald-500 inline-block animate-ping"></span>
+              <span>Đang kiểm tra kết nối...</span>
+            </div>
+          </div>
+          <a href="https://docs.google.com/spreadsheets/d/1uGRxJEPZljoVKlbBXRatjPiIpk2NBnXldwWSfVYVy_Y/edit?usp=sharing" target="_blank" rel="noopener noreferrer" class="px-2.5 py-1.5 bg-emerald-700 hover:bg-emerald-800 text-white font-bold rounded-lg text-xs flex items-center gap-1 shadow-sm flex-shrink-0 transition">
+            <i class="fa-solid fa-arrow-up-right-from-square text-[10px]"></i>
+            <span>Mở Sheet</span>
+          </a>
+        </div>
+
+        <!-- Sync Actions -->
+        <div class="grid grid-cols-2 gap-2">
+          <button id="btn-push-gsheet" onclick="pushGoogleSync()" class="px-3 py-2.5 bg-brand-600 hover:bg-brand-700 text-white font-bold rounded-xl text-xs flex items-center justify-center gap-1.5 shadow active:scale-95 transition">
+            <i class="fa-solid fa-cloud-arrow-up text-amber-300"></i>
+            <span>Đẩy Lên Google Sheet</span>
+          </button>
+          <button id="btn-pull-gsheet" onclick="pullGoogleSync()" class="px-3 py-2.5 bg-slate-700 hover:bg-slate-800 text-white font-bold rounded-xl text-xs flex items-center justify-center gap-1.5 shadow active:scale-95 transition">
+            <i class="fa-solid fa-cloud-arrow-down text-emerald-300"></i>
+            <span>Kéo Từ Google Về Web</span>
+          </button>
+        </div>
+
+        <!-- Webhook URL Configuration -->
+        <div class="border-t border-slate-200 pt-3 space-y-2.5">
+          <label class="block text-xs font-bold text-slate-800">
+            URL Webhook Google Apps Script:
+          </label>
+          <input type="url" id="gsync-webhook-url" placeholder="https://script.google.com/macros/s/AKfycb.../exec" class="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 font-mono">
+          
+          <label class="flex items-center gap-2 cursor-pointer pt-1">
+            <input type="checkbox" id="gsync-auto-sync" checked class="w-4 h-4 text-emerald-600 rounded border-slate-300 focus:ring-emerald-500">
+            <span class="text-xs font-semibold text-slate-700">Tự động đẩy sang Google Sheets mỗi khi thêm/sửa món hoặc nguyên liệu</span>
+          </label>
+        </div>
+
+        <!-- Sync Log Info -->
+        <div class="bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-[11px] text-slate-600 space-y-1">
+          <div class="flex justify-between">
+            <span class="font-semibold text-slate-500">Lần đồng bộ cuối:</span>
+            <span id="gsync-last-time" class="font-bold text-slate-700">Chưa đồng bộ</span>
+          </div>
+          <div class="flex justify-between">
+            <span class="font-semibold text-slate-500">Trạng thái:</span>
+            <span id="gsync-last-status" class="font-medium text-slate-700 truncate max-w-[200px]">Sẵn sàng</span>
+          </div>
+        </div>
+
+        <!-- Setup Instructions Accordion -->
+        <details class="bg-amber-50/70 border border-amber-200 rounded-xl p-3 text-xs text-amber-950">
+          <summary class="font-bold cursor-pointer text-amber-900 flex items-center gap-1.5">
+            <i class="fa-solid fa-circle-question text-amber-600"></i>
+            <span>Hướng dẫn 1 phút để tạo URL Webhook trên Google Sheets</span>
+          </summary>
+          <div class="mt-2.5 space-y-2 text-[11px] text-slate-700 leading-relaxed border-t border-amber-200/60 pt-2">
+            <p><strong>Bước 1:</strong> Mở file Google Sheet của bạn qua nút <span class="text-emerald-700 font-bold">Mở Sheet</span> ở trên.</p>
+            <p><strong>Bước 2:</strong> Vào menu <strong>Tiện ích mở rộng</strong> (Extensions) &rarr; chọn <strong>Apps Script</strong>.</p>
+            <p><strong>Bước 3:</strong> Xóa hết code mặc định, dán toàn bộ mã từ file <code>google_sheets_script.gs</code> vào và nhấn Ctrl+S (Lưu).</p>
+            <p><strong>Bước 4:</strong> Bấm nút <strong>Triển khai</strong> (Deploy) góc trên bên phải &rarr; chọn <strong>Triển khai mới</strong> (New deployment).</p>
+            <p><strong>Bước 5:</strong> Chọn loại <strong>Ứng dụng web</strong> (Web app), mục <em>Ai có quyền truy cập</em> chọn <strong>Bất kỳ ai</strong> (Anyone) &rarr; Bấm <strong>Triển khai</strong>.</p>
+            <p><strong>Bước 6:</strong> Copy <em>URL ứng dụng web</em> được cấp và dán vào ô trên, sau đó bấm <strong>Lưu Cấu Hình</strong>!</p>
+          </div>
+        </details>
+      </div>
+
+      <div class="bg-slate-50 border-t border-slate-200 px-4 py-2.5 flex items-center justify-between gap-2 flex-shrink-0">
+        <button onclick="closeGoogleSyncModal()" class="px-3 py-1.5 border border-slate-300 rounded-lg text-xs font-semibold text-slate-600 hover:bg-slate-100 transition">Đóng</button>
+        <button onclick="saveGoogleConfigAction()" class="px-4 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold shadow transition flex items-center gap-1.5">
+          <i class="fa-solid fa-floppy-disk"></i>
+          <span>Lưu Cấu Hình</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
   <!-- MODAL: CHANGE PASSWORD -->
   <div id="modal-change-password" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-3 sm:p-4 hidden">
     <div class="bg-white rounded-2xl shadow-2xl max-w-sm w-full overflow-hidden animate-in fade-in zoom-in-95 duration-150">
@@ -682,6 +784,7 @@
 
     document.addEventListener("DOMContentLoaded", () => {
       fetchData();
+      loadGoogleConfig();
     });
 
     async function fetchData() {
@@ -1452,6 +1555,133 @@
         }
       } catch (err) {
         alert("Lỗi: " + err.message);
+      }
+    }
+
+    // ----------------------------------------------------
+    // GOOGLE SHEETS SYNCHRONIZATION FUNCTIONS
+    // ----------------------------------------------------
+    let googleConfig = {};
+
+    async function loadGoogleConfig() {
+      try {
+        const res = await fetch("/api/google_sync/config");
+        const data = await res.json();
+        if (data.success && data.config) {
+          googleConfig = data.config;
+          const indicator = document.getElementById("gsheet-indicator");
+          const badge = document.getElementById("gsync-status-badge");
+          const urlInput = document.getElementById("gsync-webhook-url");
+          const autoSyncCheck = document.getElementById("gsync-auto-sync");
+          const lastTime = document.getElementById("gsync-last-time");
+          const lastStatus = document.getElementById("gsync-last-status");
+
+          if (googleConfig.is_configured) {
+            if (indicator) {
+              indicator.className = "w-2 h-2 rounded-full bg-emerald-400 inline-block animate-pulse";
+              indicator.title = "Đã kết nối Webhook Google Sheets";
+            }
+            if (badge) {
+              badge.innerHTML = `<span class="w-2 h-2 rounded-full bg-emerald-500 inline-block"></span><span class="text-emerald-800 font-bold">🟢 Đã kích hoạt tự động đồng bộ</span>`;
+            }
+          } else {
+            if (indicator) {
+              indicator.className = "w-2 h-2 rounded-full bg-amber-400 inline-block";
+              indicator.title = "Chưa kết nối Webhook Google Sheets";
+            }
+            if (badge) {
+              badge.innerHTML = `<span class="w-2 h-2 rounded-full bg-amber-500 inline-block"></span><span class="text-amber-800 font-bold">⚠️ Chưa kết nối Webhook (Bấm để cài đặt)</span>`;
+            }
+          }
+
+          if (urlInput) urlInput.value = googleConfig.webhook_url || "";
+          if (autoSyncCheck) autoSyncCheck.checked = googleConfig.auto_sync !== false;
+          if (lastTime) lastTime.innerText = googleConfig.last_synced || "Chưa đồng bộ";
+          if (lastStatus) lastStatus.innerText = googleConfig.last_status || "Sẵn sàng";
+        }
+      } catch (err) {
+        console.error("Error loading Google Config:", err);
+      }
+    }
+
+    function openGoogleSyncModal() {
+      loadGoogleConfig();
+      document.getElementById("modal-google-sync").classList.remove("hidden");
+    }
+
+    function closeGoogleSyncModal() {
+      document.getElementById("modal-google-sync").classList.add("hidden");
+    }
+
+    async function saveGoogleConfigAction() {
+      const webhookUrl = document.getElementById("gsync-webhook-url").value.trim();
+      const autoSync = document.getElementById("gsync-auto-sync").checked;
+
+      try {
+        const res = await fetch("/api/google_sync/config", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            webhook_url: webhookUrl,
+            auto_sync: autoSync
+          })
+        });
+        const data = await res.json();
+        if (data.success) {
+          showToast("Đã lưu cấu hình Google Sheets thành công!");
+          loadGoogleConfig();
+        } else {
+          alert("Lỗi: " + data.error);
+        }
+      } catch (err) {
+        alert("Lỗi lưu cấu hình: " + err.message);
+      }
+    }
+
+    async function pushGoogleSync() {
+      const btn = document.getElementById("btn-push-gsheet");
+      const origHtml = btn.innerHTML;
+      btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin text-amber-300"></i><span>Đang đẩy dữ liệu...</span>`;
+      btn.disabled = true;
+
+      try {
+        const res = await fetch("/api/google_sync/push", { method: "POST" });
+        const data = await res.json();
+        if (data.success) {
+          showToast(data.message || "Đã đồng bộ thành công sang Google Sheet!");
+          loadGoogleConfig();
+        } else {
+          alert("Lỗi đồng bộ Google: " + (data.error || "Không thể kết nối"));
+        }
+      } catch (err) {
+        alert("Lỗi: " + err.message);
+      } finally {
+        btn.innerHTML = origHtml;
+        btn.disabled = false;
+      }
+    }
+
+    async function pullGoogleSync() {
+      const btn = document.getElementById("btn-pull-gsheet");
+      const origHtml = btn.innerHTML;
+      btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin text-emerald-300"></i><span>Đang tải về...</span>`;
+      btn.disabled = true;
+
+      try {
+        const res = await fetch("/api/google_sync/pull", { method: "POST" });
+        const data = await res.json();
+        if (data.success) {
+          showToast("Đã tải dữ liệu mới nhất từ Google Sheet về Web!");
+          await fetchData();
+          loadGoogleConfig();
+        } else {
+          alert("Lỗi tải từ Google: " + (data.error || "Chưa có dữ liệu mới"));
+        }
+      } catch (err) {
+        alert("Lỗi: " + err.message);
+      } finally {
+        btn.innerHTML = origHtml;
+        btn.disabled = false;
       }
     }
   </script>
