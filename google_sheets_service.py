@@ -16,19 +16,49 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 CONFIG_FILE = os.path.join(BASE_DIR, "google_config.json")
 DEFAULT_SHEET_URL = "https://docs.google.com/spreadsheets/d/1uGRxJEPZljoVKlbBXRatjPiIpk2NBnXldwWSfVYVy_Y/edit?usp=sharing"
 DEFAULT_SHEET_ID = "1uGRxJEPZljoVKlbBXRatjPiIpk2NBnXldwWSfVYVy_Y"
+DEFAULT_WEBHOOK_URL = "https://script.google.com/macros/s/AKfycbz3XF_9TVUAA5XPXnFq9nYakh0qm3Kuc78vl50nIYxodfQI0iMDhSJC78hdy4aU8yAFJg/exec"
+
+# Thread-safe global sync state for live user notifications
+_sync_lock = threading.Lock()
+_sync_state = {
+    "is_syncing": False,
+    "last_status": "Đã kết nối Google Sheets",
+    "last_synced": None,
+    "has_error": False,
+    "error_message": "",
+    "timestamp": None
+}
+
+def get_sync_state():
+    with _sync_lock:
+        return dict(_sync_state)
+
+def update_sync_state(is_syncing=None, last_status=None, last_synced=None, has_error=None, error_message=None):
+    with _sync_lock:
+        now_time = datetime.datetime.now().strftime("%H:%M:%S")
+        if is_syncing is not None:
+            _sync_state["is_syncing"] = is_syncing
+        if last_status is not None:
+            _sync_state["last_status"] = last_status
+        if last_synced is not None:
+            _sync_state["last_synced"] = last_synced
+        if has_error is not None:
+            _sync_state["has_error"] = has_error
+        if error_message is not None:
+            _sync_state["error_message"] = error_message
+        _sync_state["timestamp"] = now_time
+    return dict(_sync_state)
 
 def load_google_config():
     defaults = {
         "sheet_url": DEFAULT_SHEET_URL,
         "sheet_id": DEFAULT_SHEET_ID,
-        "webhook_url": os.environ.get("GOOGLE_SHEET_WEBHOOK", ""),
+        "webhook_url": DEFAULT_WEBHOOK_URL,
         "auto_sync": True,
         "last_synced": None,
-        "last_status": "Chưa kết nối Webhook",
-        "is_configured": False
+        "last_status": "Sẵn sàng",
+        "is_configured": True
     }
-    
-    env_webhook = os.environ.get("GOOGLE_SHEET_WEBHOOK", "").strip()
     
     if os.path.exists(CONFIG_FILE):
         try:
@@ -38,8 +68,11 @@ def load_google_config():
         except Exception:
             pass
             
+    env_webhook = os.environ.get("GOOGLE_SHEET_WEBHOOK", "").strip()
     if env_webhook:
         defaults["webhook_url"] = env_webhook
+    elif not defaults.get("webhook_url"):
+        defaults["webhook_url"] = DEFAULT_WEBHOOK_URL
         
     defaults["is_configured"] = bool(defaults.get("webhook_url", "").strip())
     return defaults
@@ -57,49 +90,77 @@ def save_google_config(config_data):
 
 def push_to_google_sheets(data):
     """
-    Synchronously push data payload to Google Sheet via Google Apps Script Webhook.
-    Uses requests if available, or native urllib.request.
+    Push data payload to Google Sheet via Google Apps Script Webhook.
+    Updates thread-safe sync state so user sees live feedback.
     """
     config = load_google_config()
-    webhook_url = config.get("webhook_url", "").strip()
+    webhook_url = config.get("webhook_url", "").strip() or DEFAULT_WEBHOOK_URL
     
-    if not webhook_url:
-        return {
-            "success": False, 
-            "error": "Chưa cấu hình URL Webhook Google Sheets. Vui lòng bấm Google Sheets trên thanh menu để dán URL."
-        }
-        
-    now_str = datetime.datetime.now().strftime("%H:%M:%S %d/%m/%Y")
+    update_sync_state(
+        is_syncing=True,
+        last_status="Đang tự động lưu lên Google Sheets...",
+        has_error=False,
+        error_message=""
+    )
+    
+    now_full = datetime.datetime.now().strftime("%H:%M:%S %d/%m/%Y")
+    now_time = datetime.datetime.now().strftime("%H:%M:%S")
     payload_bytes = json.dumps(data, ensure_ascii=False).encode("utf-8")
 
     # Method 1: requests library
     if HAS_REQUESTS:
         try:
             headers = {"Content-Type": "application/json; charset=utf-8"}
-            response = requests.post(webhook_url, data=payload_bytes, headers=headers, timeout=25, allow_redirects=True)
+            response = requests.post(webhook_url, data=payload_bytes, headers=headers, timeout=30, allow_redirects=True)
             if response.status_code == 200:
                 try:
                     res_json = response.json()
                     if res_json.get("status") == "success":
                         save_google_config({
-                            "last_synced": now_str,
-                            "last_status": "Thành công (" + now_str + ")"
+                            "last_synced": now_full,
+                            "last_status": f"Đã lưu thành công ({now_time})"
                         })
+                        update_sync_state(
+                            is_syncing=False,
+                            last_status=f"Đã tự động lưu thành công ({now_time})",
+                            last_synced=now_time,
+                            has_error=False,
+                            error_message=""
+                        )
                         return {
                             "success": True,
-                            "message": "Đã đồng bộ thành công vào Google Sheet!",
-                            "timestamp": now_str,
+                            "message": "Đã tự động lưu thành công lên Google Sheet!",
+                            "timestamp": now_time,
                             "google_response": res_json
                         }
                     else:
-                        err_msg = res_json.get("message", "Lỗi từ Apps Script")
-                        save_google_config({"last_status": f"Lỗi: {err_msg}"})
+                        err_msg = res_json.get("message", "Lỗi từ Google Apps Script")
+                        update_sync_state(
+                            is_syncing=False,
+                            last_status="Hiện tại chưa lưu được lên Google Sheets",
+                            has_error=True,
+                            error_message=err_msg
+                        )
                         return {"success": False, "error": err_msg}
                 except Exception:
-                    save_google_config({"last_synced": now_str, "last_status": "Thành công (" + now_str + ")"})
-                    return {"success": True, "message": "Đã gửi dữ liệu sang Google Sheets!", "timestamp": now_str}
+                    update_sync_state(
+                        is_syncing=False,
+                        last_status=f"Đã tự động lưu thành công ({now_time})",
+                        last_synced=now_time,
+                        has_error=False
+                    )
+                    return {"success": True, "message": "Đã gửi dữ liệu sang Google Sheets!", "timestamp": now_time}
+            elif response.status_code in [401, 403]:
+                err_auth = "Lỗi quyền truy cập (Unauthorized): Mục 'Ai có quyền truy cập' cần chọn là 'Bất kỳ ai' (Anyone)."
+                update_sync_state(
+                    is_syncing=False,
+                    last_status="Hiện tại chưa lưu được lên Google Sheets (Lỗi quyền 401)",
+                    has_error=True,
+                    error_message=err_auth
+                )
+                return {"success": False, "error": err_auth}
         except Exception as e:
-            print(f"Requests post error, trying urllib fallback: {e}")
+            print(f"Requests error, trying urllib fallback: {e}")
 
     # Method 2: Standard library urllib.request
     try:
@@ -110,54 +171,84 @@ def push_to_google_sheets(data):
             method="POST"
         )
         
-        with urllib.request.urlopen(req, timeout=25) as resp:
+        with urllib.request.urlopen(req, timeout=30) as resp:
             resp_data = resp.read().decode("utf-8")
             try:
                 res_json = json.loads(resp_data)
                 if res_json.get("status") == "success":
                     save_google_config({
-                        "last_synced": now_str,
-                        "last_status": "Thành công (" + now_str + ")"
+                        "last_synced": now_full,
+                        "last_status": f"Đã lưu thành công ({now_time})"
                     })
+                    update_sync_state(
+                        is_syncing=False,
+                        last_status=f"Đã tự động lưu thành công ({now_time})",
+                        last_synced=now_time,
+                        has_error=False,
+                        error_message=""
+                    )
                     return {
                         "success": True,
-                        "message": "Đã đồng bộ thành công vào Google Sheet!",
-                        "timestamp": now_str,
+                        "message": "Đã tự động lưu thành công lên Google Sheet!",
+                        "timestamp": now_time,
                         "google_response": res_json
                     }
                 else:
                     err_msg = res_json.get("message", "Lỗi từ Apps Script")
-                    save_google_config({"last_status": f"Lỗi: {err_msg}"})
+                    update_sync_state(
+                        is_syncing=False,
+                        last_status="Hiện tại chưa lưu được lên Google Sheets",
+                        has_error=True,
+                        error_message=err_msg
+                    )
                     return {"success": False, "error": err_msg}
             except Exception:
-                save_google_config({"last_synced": now_str, "last_status": "Thành công (" + now_str + ")"})
-                return {"success": True, "message": "Đã gửi dữ liệu sang Google Sheets!", "timestamp": now_str}
+                update_sync_state(
+                    is_syncing=False,
+                    last_status=f"Đã tự động lưu thành công ({now_time})",
+                    last_synced=now_time,
+                    has_error=False
+                )
+                return {"success": True, "message": "Đã gửi dữ liệu sang Google Sheets!", "timestamp": now_time}
                 
     except urllib.error.HTTPError as e:
         if e.code in [401, 403]:
-            friendly_err = "Lỗi quyền truy cập (Unauthorized): Trong Apps Script, mục 'Ai có quyền truy cập' (Who has access) bạn cần chọn là 'Bất kỳ ai' (Anyone) thay vì 'Chỉ mình tôi'."
-            save_google_config({"last_status": "Lỗi 401: Cần chọn quyền 'Bất kỳ ai'"})
-            return {"success": False, "error": friendly_err}
-        err_msg = f"Lỗi máy chủ Google HTTP {e.code}: {e.reason}"
-        save_google_config({"last_status": err_msg})
-        return {"success": False, "error": err_msg}
+            friendly_err = "Lỗi quyền truy cập (Unauthorized): Mục 'Ai có quyền truy cập' cần chọn là 'Bất kỳ ai' (Anyone)."
+        else:
+            friendly_err = f"Lỗi máy chủ Google HTTP {e.code}: {e.reason}"
+        update_sync_state(
+            is_syncing=False,
+            last_status="Hiện tại chưa lưu được lên Google Sheets",
+            has_error=True,
+            error_message=friendly_err
+        )
+        return {"success": False, "error": friendly_err}
     except urllib.error.URLError as e:
-        save_google_config({"last_status": f"Lỗi kết nối: {e.reason}"})
-        return {"success": False, "error": f"Không thể kết nối đến Google Sheets: {e.reason}"}
+        err_msg = f"Không thể kết nối đến Google Sheets: {e.reason}"
+        update_sync_state(
+            is_syncing=False,
+            last_status="Hiện tại chưa lưu được lên Google Sheets (Mất kết nối)",
+            has_error=True,
+            error_message=err_msg
+        )
+        return {"success": False, "error": err_msg}
     except Exception as e:
-        save_google_config({"last_status": f"Lỗi: {str(e)}"})
-        return {"success": False, "error": str(e)}
+        err_msg = str(e)
+        update_sync_state(
+            is_syncing=False,
+            last_status="Hiện tại chưa lưu được lên Google Sheets",
+            has_error=True,
+            error_message=err_msg
+        )
+        return {"success": False, "error": err_msg}
 
 def pull_from_google_sheets():
     """
     Pull data from Google Sheet via Apps Script doGet.
     """
     config = load_google_config()
-    webhook_url = config.get("webhook_url", "").strip()
+    webhook_url = config.get("webhook_url", "").strip() or DEFAULT_WEBHOOK_URL
     
-    if not webhook_url:
-        return {"success": False, "error": "Chưa cấu hình URL Webhook Google Sheets."}
-        
     try:
         req = urllib.request.Request(webhook_url, method="GET")
         with urllib.request.urlopen(req, timeout=25) as resp:
@@ -176,7 +267,13 @@ def trigger_async_sync(data):
     so API calls return immediately without blocking UI.
     """
     config = load_google_config()
-    if config.get("auto_sync", True) and config.get("is_configured", False):
+    if config.get("auto_sync", True):
+        update_sync_state(
+            is_syncing=True,
+            last_status="Đang tự động lưu lên Google Sheets...",
+            has_error=False,
+            error_message=""
+        )
         t = threading.Thread(target=push_to_google_sheets, args=(data,), daemon=True)
         t.start()
         return True

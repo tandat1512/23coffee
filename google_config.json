@@ -1,9 +1,9 @@
 {
   "sheet_url": "https://docs.google.com/spreadsheets/d/1uGRxJEPZljoVKlbBXRatjPiIpk2NBnXldwWSfVYVy_Y/edit?usp=sharing",
   "sheet_id": "1uGRxJEPZljoVKlbBXRatjPiIpk2NBnXldwWSfVYVy_Y",
-  "webhook_url": "",
+  "webhook_url": "https://script.google.com/macros/s/AKfycbz3XF_9TVUAA5XPXnFq9nYakh0qm3Kuc78vl50nIYxodfQI0iMDhSJC78hdy4aU8yAFJg/exec",
   "auto_sync": true,
-  "last_synced": null,
-  "last_status": "Chưa kết nối Webhook",
-  "is_configured": false
+  "last_synced": "15:28:19 02/11/2026",
+  "last_status": "Đã lưu thành công (15:28:19)",
+  "is_configured": true
 }

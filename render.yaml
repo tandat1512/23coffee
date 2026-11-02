@@ -16,3 +16,5 @@ services:
         value: tandat
       - key: USER2_PASS
         value: admin
+      - key: GOOGLE_SHEET_WEBHOOK
+        value: https://script.google.com/macros/s/AKfycbz3XF_9TVUAA5XPXnFq9nYakh0qm3Kuc78vl50nIYxodfQI0iMDhSJC78hdy4aU8yAFJg/exec

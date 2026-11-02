@@ -90,8 +90,14 @@
           </div>
         </div>
 
-        <!-- User profile & Quick action dropdown -->
+        <!-- User profile & Quick action dropdown & Live Sync Status -->
         <div class="flex items-center gap-1.5 sm:gap-2">
+          <!-- LIVE CLOUD SYNC STATUS PILL -->
+          <div id="cloud-sync-pill" onclick="openGoogleSyncModal()" class="cursor-pointer px-2 py-1 sm:px-2.5 sm:py-1.5 rounded-lg text-[10px] sm:text-xs font-bold bg-emerald-500/20 text-emerald-200 border border-emerald-400/30 flex items-center gap-1.5 shadow-sm hover:bg-emerald-500/30 transition" title="Bấm để xem chi tiết đồng bộ Google Sheets">
+            <i id="cloud-sync-icon" class="fa-solid fa-circle-check text-emerald-400 text-xs"></i>
+            <span id="cloud-sync-text" class="truncate max-w-[110px] sm:max-w-none">Tự động lưu: Đã bật</span>
+          </div>
+
           <span class="text-xs font-semibold bg-white/10 px-2 sm:px-2.5 py-1.5 rounded-lg border border-white/15 flex items-center gap-1.5">
             <i class="fa-solid fa-circle-user text-amber-300"></i>
             <span class="max-w-[70px] sm:max-w-none truncate">{{ session.get('user', 'User') }}</span>
@@ -140,6 +146,12 @@
 
     </div>
   </header>
+
+  <!-- LIVE SYNC NOTIFICATION BANNER (Displays during saving or errors) -->
+  <div id="sync-live-banner" class="hidden transition-all duration-300 px-3 py-2 text-xs font-bold text-center flex items-center justify-center gap-2 shadow-md z-30 sticky top-[95px] sm:top-[105px]">
+    <span id="sync-live-icon"></span>
+    <span id="sync-live-text"></span>
+  </div>
 
   <!-- KPI SUMMARY STRIP (Horizontal scroll on mobile, Grid on tablet/desktop) -->
   <section class="bg-white border-b border-slate-200 py-2 sm:py-3 shadow-sm">
@@ -791,6 +803,8 @@
     document.addEventListener("DOMContentLoaded", () => {
       fetchData();
       loadGoogleConfig();
+      checkSyncStatus();
+      setInterval(checkSyncStatus, 20000);
     });
 
     async function fetchData() {
@@ -812,22 +826,33 @@
       }
     }
 
-    function showToast(msg, type = "success") {
+    let toastTimeout = null;
+    function showToast(msg, type = "success", duration = 3500) {
       const toast = document.getElementById("toast");
       const toastMsg = document.getElementById("toast-message");
       const toastIcon = document.getElementById("toast-icon");
+      if (!toast || !toastMsg || !toastIcon) return;
       
-      toastMsg.innerText = msg;
-      if (type === "danger") {
-        toastIcon.innerHTML = '<i class="fa-solid fa-circle-exclamation text-red-400"></i>';
+      if (toastTimeout) {
+        clearTimeout(toastTimeout);
+        toastTimeout = null;
+      }
+      
+      toastMsg.innerHTML = msg;
+      if (type === "danger" || type === "error") {
+        toastIcon.innerHTML = '<i class="fa-solid fa-triangle-exclamation text-red-400"></i>';
+      } else if (type === "warning" || type === "syncing") {
+        toastIcon.innerHTML = '<i class="fa-solid fa-cloud-arrow-up text-amber-400 animate-pulse"></i>';
       } else {
         toastIcon.innerHTML = '<i class="fa-solid fa-circle-check text-emerald-400"></i>';
       }
       
       toast.classList.remove("translate-y-20", "opacity-0");
-      setTimeout(() => {
-        toast.classList.add("translate-y-20", "opacity-0");
-      }, 3500);
+      if (duration > 0) {
+        toastTimeout = setTimeout(() => {
+          toast.classList.add("translate-y-20", "opacity-0");
+        }, duration);
+      }
     }
 
     function switchTab(tabId) {
@@ -1145,8 +1170,9 @@
         });
         const data = await res.json();
         if (data.success) {
-          showToast("Đã lưu chi phí cố định & cập nhật hòa vốn vào Excel!");
+          showToast("Đã lưu chi phí cố định! Đang đồng bộ Google Sheets...", "warning", 3000);
           fetchData();
+          monitorSyncAfterSave();
         }
       } catch (err) {
         showToast("Lỗi lưu chi phí: " + err.message, "danger");
@@ -1373,8 +1399,9 @@
         }
 
         closeDrinkModal();
-        showToast(drinkId ? "Đã cập nhật món & đồng bộ vào Excel!" : "Đã tạo món mới & đồng bộ vào Excel!");
+        showToast(drinkId ? "Đã cập nhật món! Đang tự động lưu..." : "Đã tạo món mới! Đang tự động lưu...", "warning", 3000);
         fetchData();
+        monitorSyncAfterSave();
       } catch (err) {
         alert("Lỗi lưu món: " + err.message);
       }
@@ -1386,8 +1413,9 @@
         const res = await fetch("/api/drinks/" + id, { method: "DELETE" });
         const data = await res.json();
         if (data.success) {
-          showToast(`Đã xóa món "${name}" khỏi Menu & Excel!`);
+          showToast(`Đã xóa món "${name}"! Đang tự động lưu...`, "warning", 3000);
           fetchData();
+          monitorSyncAfterSave();
         } else {
           alert(data.error);
         }
@@ -1478,8 +1506,9 @@
         }
 
         closeMaterialModal();
-        showToast(matId ? "Đã cập nhật nguyên liệu & đồng bộ menu!" : "Đã tạo nguyên liệu mới & đồng bộ vào Excel!");
+        showToast(matId ? "Đã cập nhật nguyên liệu! Đang tự động lưu..." : "Đã tạo nguyên liệu! Đang tự động lưu...", "warning", 3000);
         await fetchData();
+        monitorSyncAfterSave();
 
         if (returnToDrinkModalAfterMat) {
           addRecipeRow(name, 20);
@@ -1495,8 +1524,9 @@
         const res = await fetch("/api/materials/" + id, { method: "DELETE" });
         const data = await res.json();
         if (data.success) {
-          showToast(`Đã xóa nguyên liệu "${name}"!`);
+          showToast(`Đã xóa nguyên liệu "${name}"! Đang tự động lưu...`, "warning", 3000);
           fetchData();
+          monitorSyncAfterSave();
         } else {
           alert(data.error);
         }
@@ -1565,9 +1595,128 @@
     }
 
     // ----------------------------------------------------
-    // GOOGLE SHEETS SYNCHRONIZATION FUNCTIONS
+    // GOOGLE SHEETS LIVE SYNC MONITOR & CONTROLS
     // ----------------------------------------------------
     let googleConfig = {};
+    let syncCheckInterval = null;
+
+    function updateSyncUI(state) {
+      if (!state) return;
+      
+      const banner = document.getElementById("sync-live-banner");
+      const bannerIcon = document.getElementById("sync-live-icon");
+      const bannerText = document.getElementById("sync-live-text");
+
+      const pill = document.getElementById("cloud-sync-pill");
+      const pillIcon = document.getElementById("cloud-sync-icon");
+      const pillText = document.getElementById("cloud-sync-text");
+
+      const indicator = document.getElementById("gsheet-indicator");
+      const modalBadge = document.getElementById("gsync-status-badge");
+      const modalLastStatus = document.getElementById("gsync-last-status");
+      const modalLastTime = document.getElementById("gsync-last-time");
+
+      if (modalLastStatus && state.last_status) modalLastStatus.innerText = state.last_status;
+      if (modalLastTime && state.last_synced) modalLastTime.innerText = state.last_synced;
+
+      if (state.is_syncing) {
+        // --- 1. ĐANG LƯU TỰ ĐỘNG ---
+        if (banner) {
+          banner.className = "transition-all duration-300 px-3 py-2 text-xs font-bold text-center flex items-center justify-center gap-2 shadow-md z-30 sticky top-[95px] sm:top-[105px] bg-amber-500 text-slate-900 animate-pulse";
+          if (bannerIcon) bannerIcon.innerHTML = '<i class="fa-solid fa-cloud-arrow-up fa-spin"></i>';
+          if (bannerText) bannerText.innerText = "⏳ Đang được lưu tự động lên Google Sheets...";
+        }
+        if (pill) {
+          pill.className = "cursor-pointer px-2 py-1 sm:px-2.5 sm:py-1.5 rounded-lg text-[10px] sm:text-xs font-bold bg-amber-500/30 text-amber-200 border border-amber-400/50 flex items-center gap-1.5 shadow-sm animate-pulse";
+        }
+        if (pillIcon) pillIcon.className = "fa-solid fa-cloud-arrow-up fa-spin text-amber-300 text-xs";
+        if (pillText) pillText.innerText = "Đang tự động lưu...";
+        if (indicator) indicator.className = "w-2 h-2 rounded-full bg-amber-400 inline-block animate-ping";
+        if (modalBadge) modalBadge.innerHTML = `<span class="w-2 h-2 rounded-full bg-amber-400 inline-block animate-ping"></span><span class="text-amber-700 font-bold">⏳ Đang tự động lưu lên Google Sheets...</span>`;
+
+      } else if (state.has_error) {
+        // --- 2. LỖI: HIỆN TẠI CHƯA LƯU ĐƯỢC ---
+        if (banner) {
+          banner.className = "transition-all duration-300 px-3 py-2 text-xs font-bold text-center flex items-center justify-center gap-2 shadow-md z-30 sticky top-[95px] sm:top-[105px] bg-red-600 text-white";
+          if (bannerIcon) bannerIcon.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i>';
+          const errMsg = state.error_message ? ` (${state.error_message})` : "";
+          if (bannerText) {
+            bannerText.innerHTML = `<span>⚠️ Hiện tại chưa lưu được lên Google Sheets!${errMsg}</span> <button onclick="pushGoogleSync()" class="ml-2 underline hover:text-amber-200 font-extrabold cursor-pointer">Thử lại ngay</button>`;
+          }
+        }
+        if (pill) {
+          pill.className = "cursor-pointer px-2 py-1 sm:px-2.5 sm:py-1.5 rounded-lg text-[10px] sm:text-xs font-bold bg-red-500/30 text-red-200 border border-red-400/50 flex items-center gap-1.5 shadow-sm";
+        }
+        if (pillIcon) pillIcon.className = "fa-solid fa-triangle-exclamation text-red-400 text-xs";
+        if (pillText) pillText.innerText = "Hiện tại chưa lưu được!";
+        if (indicator) indicator.className = "w-2 h-2 rounded-full bg-red-500 inline-block";
+        if (modalBadge) modalBadge.innerHTML = `<span class="w-2 h-2 rounded-full bg-red-500 inline-block"></span><span class="text-red-700 font-bold">⚠️ Hiện tại chưa lưu được lên Google Sheets</span>`;
+
+      } else {
+        // --- 3. ĐÃ LƯU THÀNH CÔNG / SẴN SÀNG ---
+        if (pill) {
+          pill.className = "cursor-pointer px-2 py-1 sm:px-2.5 sm:py-1.5 rounded-lg text-[10px] sm:text-xs font-bold bg-emerald-500/20 text-emerald-200 border border-emerald-400/30 flex items-center gap-1.5 shadow-sm hover:bg-emerald-500/30 transition";
+        }
+        if (pillIcon) pillIcon.className = "fa-solid fa-circle-check text-emerald-400 text-xs";
+        if (pillText) {
+          pillText.innerText = state.last_synced ? `Đã lưu (${state.last_synced})` : "Tự động lưu: Bật";
+        }
+        if (indicator) indicator.className = "w-2 h-2 rounded-full bg-emerald-400 inline-block";
+        if (modalBadge) modalBadge.innerHTML = `<span class="w-2 h-2 rounded-full bg-emerald-500 inline-block"></span><span class="text-emerald-800 font-bold">🟢 Đã kích hoạt tự động đồng bộ</span>`;
+
+        // If banner was visible and showing saving, transition to success then hide
+        if (banner && !banner.classList.contains("hidden") && !banner.classList.contains("bg-red-600")) {
+          banner.className = "transition-all duration-300 px-3 py-2 text-xs font-bold text-center flex items-center justify-center gap-2 shadow-md z-30 sticky top-[95px] sm:top-[105px] bg-emerald-600 text-white";
+          if (bannerIcon) bannerIcon.innerHTML = '<i class="fa-solid fa-circle-check"></i>';
+          if (bannerText) bannerText.innerText = `✅ Đã tự động lưu thành công lên Google Sheets (${state.last_synced || "vừa xong"})!`;
+          setTimeout(() => {
+            banner.classList.add("hidden");
+          }, 3500);
+        } else if (banner && !banner.classList.contains("bg-red-600")) {
+          banner.classList.add("hidden");
+        }
+      }
+    }
+
+    async function checkSyncStatus() {
+      try {
+        const res = await fetch("/api/google_sync/status");
+        const data = await res.json();
+        if (data.success && data.state) {
+          updateSyncUI(data.state);
+          return data.state;
+        }
+      } catch (err) {
+        console.warn("Could not check sync status:", err);
+      }
+      return null;
+    }
+
+    function monitorSyncAfterSave() {
+      updateSyncUI({ is_syncing: true });
+      showToast("⏳ Đang được lưu tự động lên Google Sheets...", "warning", 3000);
+
+      let attempts = 0;
+      const maxAttempts = 25; // 25 * 800ms = 20s
+      if (syncCheckInterval) clearInterval(syncCheckInterval);
+
+      syncCheckInterval = setInterval(async () => {
+        attempts++;
+        const state = await checkSyncStatus();
+        if (state && !state.is_syncing) {
+          clearInterval(syncCheckInterval);
+          syncCheckInterval = null;
+          if (state.has_error) {
+            showToast("⚠️ Hiện tại chưa lưu được lên Google Sheets!", "danger", 6000);
+          } else {
+            showToast(`✅ Đã tự động lưu thành công lên Google Sheets (${state.last_synced || "vừa xong"})!`, "success", 4000);
+          }
+        } else if (attempts >= maxAttempts) {
+          clearInterval(syncCheckInterval);
+          syncCheckInterval = null;
+        }
+      }, 800);
+    }
 
     async function loadGoogleConfig() {
       try {
@@ -1575,36 +1724,17 @@
         const data = await res.json();
         if (data.success && data.config) {
           googleConfig = data.config;
-          const indicator = document.getElementById("gsheet-indicator");
-          const badge = document.getElementById("gsync-status-badge");
           const urlInput = document.getElementById("gsync-webhook-url");
           const autoSyncCheck = document.getElementById("gsync-auto-sync");
           const lastTime = document.getElementById("gsync-last-time");
           const lastStatus = document.getElementById("gsync-last-status");
-
-          if (googleConfig.is_configured) {
-            if (indicator) {
-              indicator.className = "w-2 h-2 rounded-full bg-emerald-400 inline-block animate-pulse";
-              indicator.title = "Đã kết nối Webhook Google Sheets";
-            }
-            if (badge) {
-              badge.innerHTML = `<span class="w-2 h-2 rounded-full bg-emerald-500 inline-block"></span><span class="text-emerald-800 font-bold">🟢 Đã kích hoạt tự động đồng bộ</span>`;
-            }
-          } else {
-            if (indicator) {
-              indicator.className = "w-2 h-2 rounded-full bg-amber-400 inline-block";
-              indicator.title = "Chưa kết nối Webhook Google Sheets";
-            }
-            if (badge) {
-              badge.innerHTML = `<span class="w-2 h-2 rounded-full bg-amber-500 inline-block"></span><span class="text-amber-800 font-bold">⚠️ Chưa kết nối Webhook (Bấm để cài đặt)</span>`;
-            }
-          }
 
           if (urlInput) urlInput.value = googleConfig.webhook_url || "";
           if (autoSyncCheck) autoSyncCheck.checked = googleConfig.auto_sync !== false;
           if (lastTime) lastTime.innerText = googleConfig.last_synced || "Chưa đồng bộ";
           if (lastStatus) lastStatus.innerText = googleConfig.last_status || "Sẵn sàng";
         }
+        await checkSyncStatus();
       } catch (err) {
         console.error("Error loading Google Config:", err);
       }
@@ -1646,24 +1776,35 @@
 
     async function pushGoogleSync() {
       const btn = document.getElementById("btn-push-gsheet");
-      const origHtml = btn.innerHTML;
-      btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin text-amber-300"></i><span>Đang đẩy dữ liệu...</span>`;
-      btn.disabled = true;
+      const origHtml = btn ? btn.innerHTML : "";
+      if (btn) {
+        btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin text-amber-300"></i><span>Đang đẩy dữ liệu...</span>`;
+        btn.disabled = true;
+      }
+      showToast("⏳ Đang được lưu tự động lên Google Sheets...", "warning", 5000);
+      updateSyncUI({ is_syncing: true });
 
       try {
         const res = await fetch("/api/google_sync/push", { method: "POST" });
         const data = await res.json();
         if (data.success) {
-          showToast(data.message || "Đã đồng bộ thành công sang Google Sheet!");
+          showToast("✅ " + (data.message || "Đã tự động lưu thành công lên Google Sheets!"), "success", 4000);
           loadGoogleConfig();
+          checkSyncStatus();
         } else {
+          showToast("⚠️ Hiện tại chưa lưu được lên Google Sheets!", "danger", 6000);
+          updateSyncUI({ has_error: true, error_message: data.error || "Không thể kết nối" });
           alert("Lỗi đồng bộ Google: " + (data.error || "Không thể kết nối"));
         }
       } catch (err) {
+        showToast("⚠️ Hiện tại chưa lưu được lên Google Sheets!", "danger", 6000);
+        updateSyncUI({ has_error: true, error_message: err.message });
         alert("Lỗi: " + err.message);
       } finally {
-        btn.innerHTML = origHtml;
-        btn.disabled = false;
+        if (btn) {
+          btn.innerHTML = origHtml;
+          btn.disabled = false;
+        }
       }
     }
 

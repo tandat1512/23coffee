@@ -10,7 +10,8 @@ from google_sheets_service import (
     save_google_config, 
     push_to_google_sheets, 
     pull_from_google_sheets, 
-    trigger_async_sync
+    trigger_async_sync,
+    get_sync_state
 )
 from db_service import save_snapshot_to_db, load_data_from_db, init_db
 
@@ -483,6 +484,16 @@ def download_excel():
 # ----------------------------------------------------
 # GOOGLE SHEETS SYNCHRONIZATION API
 # ----------------------------------------------------
+@app.route("/api/google_sync/status", methods=["GET"])
+def google_sync_status():
+    state = get_sync_state()
+    config = load_google_config()
+    return jsonify({
+        "success": True,
+        "state": state,
+        "config": config
+    })
+
 @app.route("/api/google_sync/config", methods=["GET", "POST"])
 def google_sync_config():
     if request.method == "POST":
