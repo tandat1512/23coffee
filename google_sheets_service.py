@@ -242,22 +242,32 @@ def push_to_google_sheets(data):
         )
         return {"success": False, "error": err_msg}
 
-def pull_from_google_sheets():
+def pull_from_google_sheets(timeout=25):
     """
     Pull data from Google Sheet via Apps Script doGet.
+    Returns complete dataset (materials, packaging, drinks, fixed_costs, target_profit).
     """
     config = load_google_config()
     webhook_url = config.get("webhook_url", "").strip() or DEFAULT_WEBHOOK_URL
     
     try:
-        req = urllib.request.Request(webhook_url, method="GET")
-        with urllib.request.urlopen(req, timeout=25) as resp:
+        req = urllib.request.Request(
+            webhook_url, 
+            headers={"User-Agent": "Mozilla/5.0 (23CoffeeSync/1.0)"},
+            method="GET"
+        )
+        with urllib.request.urlopen(req, timeout=timeout) as resp:
             resp_data = resp.read().decode("utf-8")
             res_json = json.loads(resp_data)
             if res_json.get("status") == "success":
-                return {"success": True, "data": res_json.get("data", {})}
+                return {
+                    "success": True, 
+                    "data": res_json.get("data", {}),
+                    "source": res_json.get("source", "unknown"),
+                    "timestamp": res_json.get("timestamp")
+                }
             else:
-                return {"success": False, "error": res_json.get("message", "Lỗi không xác định")}
+                return {"success": False, "error": res_json.get("message", "Lỗi không xác định từ Google Sheets")}
     except Exception as e:
         return {"success": False, "error": str(e)}
 

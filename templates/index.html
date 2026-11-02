@@ -1810,25 +1810,33 @@
 
     async function pullGoogleSync() {
       const btn = document.getElementById("btn-pull-gsheet");
-      const origHtml = btn.innerHTML;
-      btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin text-emerald-300"></i><span>Đang tải về...</span>`;
-      btn.disabled = true;
+      const origHtml = btn ? btn.innerHTML : "";
+      if (btn) {
+        btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin text-emerald-300"></i><span>Đang tải về...</span>`;
+        btn.disabled = true;
+      }
+      showToast("⏳ Đang tải dữ liệu từ Google Sheets về Web...", "warning", 3000);
 
       try {
         const res = await fetch("/api/google_sync/pull", { method: "POST" });
         const data = await res.json();
         if (data.success) {
-          showToast("Đã tải dữ liệu mới nhất từ Google Sheet về Web!");
+          showToast("✅ " + (data.message || "Đã tải dữ liệu mới nhất từ Google Sheet về Web!"), "success", 4000);
           await fetchData();
           loadGoogleConfig();
+          checkSyncStatus();
         } else {
+          showToast("⚠️ " + (data.error || "Chưa thể kết nối tới Google Sheets"), "danger", 5000);
           alert("Lỗi tải từ Google: " + (data.error || "Chưa có dữ liệu mới"));
         }
       } catch (err) {
+        showToast("⚠️ " + err.message, "danger", 5000);
         alert("Lỗi: " + err.message);
       } finally {
-        btn.innerHTML = origHtml;
-        btn.disabled = false;
+        if (btn) {
+          btn.innerHTML = origHtml;
+          btn.disabled = false;
+        }
       }
     }
   </script>

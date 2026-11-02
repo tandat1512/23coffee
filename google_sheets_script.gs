@@ -25,6 +25,10 @@ function doPost(e) {
     var data = JSON.parse(contents);
     var ss = SpreadsheetApp.getActiveSpreadsheet();
     
+    // 0. Lưu bản sao lưu hệ thống toàn vẹn vào sheet ẩn _SYSTEM_DATA_
+    // (Bảo đảm khi Render hay server reset, 100% Menu, Công thức, Nguyên liệu, Chi phí được phục hồi)
+    saveSystemBackup(ss, contents);
+
     // Tự động nhận diện dấu phân cách công thức (; cho Tiếng Việt / , cho Tiếng Anh)
     var sep = getFormulaSeparator(ss);
 
@@ -78,10 +82,24 @@ function doPost(e) {
 function doGet(e) {
   try {
     var ss = SpreadsheetApp.getActiveSpreadsheet();
+    
+    // 1. Ưu tiên lấy từ bản sao lưu hoàn chỉnh _SYSTEM_DATA_ (Đầy đủ cả món, công thức, bao bì, chi phí)
+    var backupData = loadSystemBackup(ss);
+    if (backupData && backupData.materials && backupData.materials.length > 0) {
+      return ContentService.createTextOutput(JSON.stringify({
+        status: "success",
+        data: backupData,
+        source: "system_backup",
+        timestamp: new Date().toLocaleString("vi-VN", { timeZone: "Asia/Ho_Chi_Minh" })
+      })).setMimeType(ContentService.MimeType.JSON);
+    }
+
+    // 2. Nếu chưa có sheet ẩn, tự động xuất từ các sheet trực tiếp
     var exportedData = exportDataFromSheets(ss);
     return ContentService.createTextOutput(JSON.stringify({
       status: "success",
       data: exportedData,
+      source: "sheets_export",
       timestamp: new Date().toLocaleString("vi-VN", { timeZone: "Asia/Ho_Chi_Minh" })
     })).setMimeType(ContentService.MimeType.JSON);
   } catch (error) {
@@ -90,6 +108,48 @@ function doGet(e) {
       message: error.toString()
     })).setMimeType(ContentService.MimeType.JSON);
   }
+}
+
+// -------------------------------------------------------------
+// SAO LƯU TOÀN DIỆN VÀO SHEET ẨN _SYSTEM_DATA_
+// -------------------------------------------------------------
+function saveSystemBackup(ss, contents) {
+  try {
+    var sheet = ss.getSheetByName("_SYSTEM_DATA_");
+    if (!sheet) {
+      sheet = ss.insertSheet("_SYSTEM_DATA_");
+      sheet.hideSheet();
+    } else {
+      sheet.clear();
+    }
+    // Chia nhỏ dữ liệu phòng trường hợp chuỗi vượt giới hạn ô (50.000 ký tự)
+    var chunkSize = 40000;
+    var chunks = [];
+    for (var i = 0; i < contents.length; i += chunkSize) {
+      chunks.push([contents.substring(i, i + chunkSize)]);
+    }
+    sheet.getRange(1, 1, chunks.length, 1).setValues(chunks);
+  } catch (err) {
+    Logger.log("Lỗi lưu _SYSTEM_DATA_: " + err);
+  }
+}
+
+function loadSystemBackup(ss) {
+  try {
+    var sheet = ss.getSheetByName("_SYSTEM_DATA_");
+    if (!sheet || sheet.getLastRow() < 1) return null;
+    var values = sheet.getRange(1, 1, sheet.getLastRow(), 1).getValues();
+    var fullStr = "";
+    for (var i = 0; i < values.length; i++) {
+      fullStr += values[i][0];
+    }
+    if (fullStr && fullStr.trim().startsWith("{")) {
+      return JSON.parse(fullStr);
+    }
+  } catch (err) {
+    Logger.log("Lỗi đọc _SYSTEM_DATA_: " + err);
+  }
+  return null;
 }
 
 // -------------------------------------------------------------
@@ -554,7 +614,50 @@ function exportDataFromSheets(ss) {
     }
   }
 
+  // Đọc Sheet 2: Vật Tư Bao Bì
+  var s2 = ss.getSheetByName("2. Vật Tư Bao Bì");
+  var packaging = [];
+  if (s2 && s2.getLastRow() >= 5) {
+    var data2 = s2.getRange(5, 1, s2.getLastRow() - 4, 9).getValues();
+    for (var j = 0; j < data2.length; j++) {
+      if (data2[j][1]) {
+        packaging.push({
+          id: data2[j][0] || ("BB0" + (j + 1)),
+          name: data2[j][1],
+          cup: Number(data2[j][2] || 0),
+          lid: Number(data2[j][3] || 0),
+          straw: Number(data2[j][4] || 0),
+          bag: Number(data2[j][5] || 0),
+          spoon: Number(data2[j][6] || 0),
+          total: Number(data2[j][7] || 0),
+          note: data2[j][8] || ""
+        });
+      }
+    }
+  }
+
+  // Đọc Sheet 5: Chi Phí Cố Định
+  var s5 = ss.getSheetByName("5. Điểm Hòa Vốn & Dòng Tiền");
+  var fixedCosts = [];
+  var targetProfit = 15000000;
+  if (s5 && s5.getLastRow() >= 6) {
+    var data5 = s5.getRange(6, 2, Math.min(15, s5.getLastRow() - 5), 5).getValues();
+    for (var k = 0; k < data5.length; k++) {
+      var itemName = data5[k][1];
+      if (itemName && itemName.indexOf("TỔNG CHI PHÍ") === -1) {
+        fixedCosts.push({
+          name: itemName,
+          cost: Number(data5[k][2] || 0),
+          note: data5[k][4] || ""
+        });
+      }
+    }
+  }
+
   return {
-    materials: materials
+    materials: materials,
+    packaging: packaging.length > 0 ? packaging : undefined,
+    fixed_costs: fixedCosts.length > 0 ? fixedCosts : undefined,
+    target_profit: targetProfit
   };
 }

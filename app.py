@@ -2,6 +2,7 @@ import os
 import sys
 import json
 import math
+import threading
 from flask import Flask, render_template, request, jsonify, send_file, session, redirect, url_for
 from werkzeug.security import generate_password_hash, check_password_hash
 from excel_service import generate_excel_from_data
@@ -54,8 +55,19 @@ def save_users(users):
     with open(USERS_FILE, "w", encoding="utf-8") as f:
         json.dump(users, f, ensure_ascii=False, indent=2)
 
+# Global state for cold-start / Render restart auto-hydration
+_initial_sync_done = False
+_sync_in_progress = False
+
 @app.before_request
 def require_login():
+    global _initial_sync_done
+    
+    # 1. On cold start / Render restart, automatically trigger a background sync pull on first request
+    if not _initial_sync_done and request.endpoint not in ['static']:
+        _initial_sync_done = True
+        threading.Thread(target=sync_pull_from_google_sheets_safely, daemon=True).start()
+
     # Public endpoints
     allowed_endpoints = ['login', 'static']
     if request.endpoint in allowed_endpoints:
@@ -100,6 +112,13 @@ def login():
             session['user'] = username
             session['name'] = user_info.get('name', username)
             session['role'] = user_info.get('role', 'user')
+            
+            # Tự động lấy dữ liệu mới nhất từ Google Sheets ngay khi đăng nhập
+            try:
+                sync_pull_from_google_sheets_safely()
+            except Exception as e:
+                print(f"[LoginSync] Error: {e}")
+
             return redirect(url_for('index'))
         else:
             return render_template('login.html', error="Tên đăng nhập hoặc mật khẩu không chính xác! Vui lòng thử lại.")
@@ -290,6 +309,78 @@ def sync_excel_file():
         }
     except Exception as e:
         return {"success": False, "error": str(e)}
+
+def apply_google_sheet_data(sheet_data):
+    """
+    Áp dụng dữ liệu tải từ Google Sheets vào bộ nhớ JSON và SQLite.
+    Bảo đảm cập nhật đầy đủ cả Món, Nguyên liệu, Bao bì, Chi phí cố định và Mục tiêu lợi nhuận.
+    Không gọi lệnh đẩy ngược lại Google Sheets để tránh vòng lặp đồng bộ.
+    """
+    if not sheet_data or not isinstance(sheet_data, dict):
+        return False
+        
+    data = load_data()
+    modified = False
+
+    # 1. Nguyên liệu (Materials)
+    if "materials" in sheet_data and isinstance(sheet_data["materials"], list) and len(sheet_data["materials"]) > 0:
+        data["materials"] = sheet_data["materials"]
+        modified = True
+
+    # 2. Bao bì (Packaging)
+    if "packaging" in sheet_data and isinstance(sheet_data["packaging"], list) and len(sheet_data["packaging"]) > 0:
+        data["packaging"] = sheet_data["packaging"]
+        modified = True
+
+    # 3. Món & Công thức (Drinks)
+    if "drinks" in sheet_data and isinstance(sheet_data["drinks"], list) and len(sheet_data["drinks"]) > 0:
+        data["drinks"] = sheet_data["drinks"]
+        modified = True
+
+    # 4. Chi phí cố định (Fixed Costs)
+    if "fixed_costs" in sheet_data and isinstance(sheet_data["fixed_costs"], list) and len(sheet_data["fixed_costs"]) > 0:
+        data["fixed_costs"] = sheet_data["fixed_costs"]
+        modified = True
+
+    # 5. Lợi nhuận kỳ vọng (Target Profit)
+    if "target_profit" in sheet_data and sheet_data["target_profit"] is not None:
+        try:
+            data["target_profit"] = float(sheet_data["target_profit"])
+            modified = True
+        except (ValueError, TypeError):
+            pass
+
+    if modified:
+        with open(DATA_FILE, "w", encoding="utf-8") as f:
+            json.dump(data, f, ensure_ascii=False, indent=2)
+        save_snapshot_to_db(data)
+        sync_excel_file()
+        print("[GoogleSync] Successfully applied updated sheet data to local storage.")
+        return True
+    return False
+
+def sync_pull_from_google_sheets_safely():
+    """
+    Ham keo du lieu an toan tu Google Sheets ve Web, co khoa chong goi chong cheo.
+    """
+    global _sync_in_progress
+    if _sync_in_progress:
+        return False
+    _sync_in_progress = True
+    try:
+        res = pull_from_google_sheets()
+        if res.get("success"):
+            sheet_data = res.get("data", {})
+            applied = apply_google_sheet_data(sheet_data)
+            return applied
+        else:
+            print(f"[GoogleSync] Pull skipped: {res.get('error')}")
+            return False
+    except Exception as e:
+        print(f"[GoogleSync] Pull error: {e}")
+        return False
+    finally:
+        _sync_in_progress = False
 
 # ----------------------------------------------------
 # MAIN ROUTES & REST API
@@ -524,16 +615,16 @@ def trigger_google_pull():
     res = pull_from_google_sheets()
     if res.get("success"):
         sheet_data = res.get("data", {})
-        # If materials came from sheet, merge or update
-        if "materials" in sheet_data and sheet_data["materials"]:
-            data = load_data()
-            data["materials"] = sheet_data["materials"]
-            save_data(data)
-            sync_excel_file()
-            return jsonify({"success": True, "message": "Đã tải dữ liệu mới từ Google Sheet về hệ thống!"})
+        applied = apply_google_sheet_data(sheet_data)
+        if applied:
+            return jsonify({"success": True, "message": "Đã tải dữ liệu mới nhất từ Google Sheet về Web!"})
+        else:
+            return jsonify({"success": True, "message": "Dữ liệu trên Web đã đồng bộ hoàn toàn với Google Sheet!"})
     return jsonify(res)
 
 if __name__ == "__main__":
+    # Khởi chạy luồng tự động kéo dữ liệu từ Google Sheets khi máy chủ khởi động
+    threading.Thread(target=sync_pull_from_google_sheets_safely, daemon=True).start()
     port = int(os.environ.get("PORT", 5000))
     print(f"Starting 23 COFFEE Cost Management App on port {port} ...")
     app.run(host="0.0.0.0", port=port, debug=False)
